@@ -33,7 +33,7 @@ database:
   user: gridops
 
 cuopt:
-  url: http://cuopt.grid-ops-services.svc.cluster.local:5000
+  url: http://cuopt.grid-ops-ai.svc.cluster.local:5000
 
 approvalMode: manual
 

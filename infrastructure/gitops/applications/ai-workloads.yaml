@@ -1,0 +1,26 @@
+# This project was developed with assistance from AI tools.
+# Wave 2: NVIDIA AI workloads — CorrDiff NIM, vLLM Cosmos Reason, cuOpt
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grid-ai-workloads
+  namespace: openshift-gitops
+  labels:
+    app.kubernetes.io/part-of: grid-resilience
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: grid-resilience
+  source:
+    repoURL: https://github.com/jeremyary/grid-resilience-showcase.git
+    targetRevision: main
+    path: infrastructure/cluster/ai-workloads
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: grid-ops-ai
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

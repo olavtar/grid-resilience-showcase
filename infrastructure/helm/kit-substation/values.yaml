@@ -9,7 +9,7 @@ kitSubstation:
     tag: high
     pullPolicy: IfNotPresent
   gpu:
-    product: NVIDIA-L4
+    product: NVIDIA-L40S
     runtimeClassName: nvidia
   resources:
     requests:
