@@ -9,7 +9,7 @@ COPY assets/purchased/substation/ /opt/nvidia/isaac-sim/scene/
 COPY kit-substation/extension/grid.resilience.data/ /opt/nvidia/isaac-sim/exts/grid.resilience.data/
 
 # Install Kafka client for the extension
-RUN pip install "confluent-kafka>=2.6.0,<3.0"
+RUN /isaac-sim/python.sh -m pip install "confluent-kafka>=2.6.0,<3.0"
 
 ENV SCENE_QUALITY=high
 ENV KAFKA_BOOTSTRAP_SERVERS=localhost:9092
