@@ -1,0 +1,18 @@
+# This project was developed with assistance from AI tools.
+# Kit substation digital twin — purchased scene assets baked in (private image only)
+FROM nvcr.io/nvidia/isaac-sim:6.0.0-dev2
+
+# Copy purchased USD scene (never committed to git — baked into private image only)
+COPY assets/purchased/substation/ /opt/nvidia/isaac-sim/scene/
+
+# Copy the data-driven Kit extension
+COPY kit-substation/extension/grid.resilience.data/ /opt/nvidia/isaac-sim/exts/grid.resilience.data/
+
+# Install Kafka client for the extension
+RUN pip install confluent-kafka>=2.6.0,<3.0
+
+ENV SCENE_QUALITY=high
+ENV KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+ENV KAFKA_CONSUMER_GROUP_ID=kit-substation
+
+EXPOSE 49100

@@ -1,0 +1,39 @@
+# This project was developed with assistance from AI tools.
+# BuildConfig + ImageStream for Kit substation — keeps purchased assets on-cluster
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: kit-substation
+  namespace: grid-ops-ai
+  labels:
+    app.kubernetes.io/name: kit-substation
+    app.kubernetes.io/part-of: grid-resilience
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: kit-substation
+  namespace: grid-ops-ai
+  labels:
+    app.kubernetes.io/name: kit-substation
+    app.kubernetes.io/part-of: grid-resilience
+spec:
+  source:
+    type: Binary
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: kit-substation/Containerfile
+      pullSecret:
+        name: ngc-pull-secret
+  output:
+    to:
+      kind: ImageStreamTag
+      name: kit-substation:high
+  resources:
+    requests:
+      cpu: 1
+      memory: 4Gi
+    limits:
+      cpu: 4
+      memory: 8Gi

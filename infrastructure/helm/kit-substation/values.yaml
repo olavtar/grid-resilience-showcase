@@ -5,9 +5,9 @@ namespace: grid-ops-ai
 
 kitSubstation:
   image:
-    repository: quay.io/jary/grid-resilience-kit-substation
+    repository: image-registry.openshift-image-registry.svc:5000/grid-ops-ai/kit-substation
     tag: high
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   gpu:
     product: NVIDIA-L40S
     runtimeClassName: nvidia
