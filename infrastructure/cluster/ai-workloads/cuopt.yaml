@@ -28,10 +28,24 @@ spec:
       containers:
         - name: cuopt
           image: nvidia/cuopt:26.6.0a-cuda12.9-py3.14
+          env:
+            - name: HOME
+              value: /tmp/home
           ports:
             - name: http
               containerPort: 5000
               protocol: TCP
+          volumeMounts:
+            - name: cache
+              mountPath: /tmp/home
+            - name: cache
+              mountPath: /.cache
+            - name: cache
+              mountPath: /.cupy
+            - name: cache
+              mountPath: /.config
+            - name: cache
+              mountPath: /.triton
           resources:
             requests:
               cpu: 500m
@@ -53,6 +67,10 @@ spec:
               port: http
             initialDelaySeconds: 60
             periodSeconds: 30
+      volumes:
+        - name: cache
+          emptyDir:
+            sizeLimit: 5Gi
 ---
 apiVersion: v1
 kind: Service
