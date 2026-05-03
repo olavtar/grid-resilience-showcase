@@ -6,3 +6,4 @@
 - [Check in before Kit/IsaacSim work](feedback_kit_isaacsim_check_in.md) — User has existing code to reference; stop and ask before writing Kit/streaming code
 - [Kit streaming reference repo](reference_kit_streaming_repo.md) — /home/jary/redhat/git/nvidia-kit-app-streaming for WebRTC streaming pattern
 - [Cluster prerequisites](project_cluster_prereqs.md) — NFD + GPU Operator are pre-installed, don't deploy via GitOps
+- [GPU Recreate strategy](feedback_gpu_recreate_strategy.md) — All GPU deployments must use Recreate, not RollingUpdate
