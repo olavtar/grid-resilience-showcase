@@ -1,13 +1,39 @@
 # This project was developed with assistance from AI tools.
+# AMQ Streams Kafka cluster (KRaft mode) for the grid ops platform
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaNodePool
+metadata:
+  name: grid-kafka-pool
+  namespace: grid-ops-infra
+  labels:
+    strimzi.io/cluster: grid-kafka
+spec:
+  replicas: 3
+  roles:
+    - controller
+    - broker
+  storage:
+    type: persistent-claim
+    size: 50Gi
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      cpu: 2
+      memory: 4Gi
+---
 apiVersion: kafka.strimzi.io/v1beta2
 kind: Kafka
 metadata:
   name: grid-kafka
   namespace: grid-ops-infra
+  annotations:
+    strimzi.io/kraft: enabled
+    strimzi.io/node-pools: enabled
 spec:
   kafka:
-    version: 3.8.1
-    replicas: 3
+    version: 4.0.0
     listeners:
       - name: plain
         port: 9092
@@ -19,28 +45,6 @@ spec:
       transaction.state.log.min.isr: 2
       default.replication.factor: 3
       min.insync.replicas: 2
-    storage:
-      type: persistent-claim
-      size: 50Gi
-    resources:
-      requests:
-        cpu: 500m
-        memory: 2Gi
-      limits:
-        cpu: 2
-        memory: 4Gi
-  zookeeper:
-    replicas: 3
-    storage:
-      type: persistent-claim
-      size: 10Gi
-    resources:
-      requests:
-        cpu: 200m
-        memory: 512Mi
-      limits:
-        cpu: 1
-        memory: 1Gi
   entityOperator:
     topicOperator: {}
     userOperator: {}
