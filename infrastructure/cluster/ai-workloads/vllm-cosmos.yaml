@@ -53,6 +53,8 @@ spec:
               mountPath: /tmp/hf-cache
             - name: cache
               mountPath: /.cache
+            - name: cache
+              mountPath: /.triton
           ports:
             - name: http
               containerPort: 8000
