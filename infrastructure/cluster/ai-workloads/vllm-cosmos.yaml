@@ -48,13 +48,19 @@ spec:
                   optional: true
             - name: HF_HOME
               value: /tmp/hf-cache
+            - name: HOME
+              value: /tmp/home
           volumeMounts:
             - name: cache
               mountPath: /tmp/hf-cache
             - name: cache
+              mountPath: /tmp/home
+            - name: cache
               mountPath: /.cache
             - name: cache
               mountPath: /.triton
+            - name: cache
+              mountPath: /.config
           ports:
             - name: http
               containerPort: 8000
