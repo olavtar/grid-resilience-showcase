@@ -31,7 +31,7 @@ spec:
         - name: ngc-pull-secret
       containers:
         - name: corrdiff
-          image: nvcr.io/nim/nvidia/corrdiff:1.1.0
+          image: nvcr.io/nim/nvidia/corrdiff:latest
           env:
             - name: ACCEPT_EULA
               value: "Y"
