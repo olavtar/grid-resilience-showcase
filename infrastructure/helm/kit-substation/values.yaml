@@ -24,7 +24,7 @@ kitSubstation:
   sceneQuality: high
 
 kafka:
-  bootstrapServers: grid-kafka-bootstrap.grid-ops-infra.svc.cluster.local:9092
+  bootstrapServers: grid-kafka-kafka-bootstrap.grid-ops-infra.svc.cluster.local:9092
 
 coturn:
   image:

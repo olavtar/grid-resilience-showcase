@@ -23,11 +23,11 @@ resources:
     memory: 512Mi
 
 kafka:
-  bootstrapServers: grid-kafka-bootstrap.grid-ops-infra.svc.cluster.local:9092
+  bootstrapServers: grid-kafka-kafka-bootstrap.grid-ops-infra.svc.cluster.local:9092
   securityProtocol: PLAINTEXT
 
 database:
-  host: grid-postgres.grid-ops-infra.svc.cluster.local
+  host: grid-postgres-ha.grid-ops-infra.svc.cluster.local
   port: 5432
   name: gridops
   user: gridops
