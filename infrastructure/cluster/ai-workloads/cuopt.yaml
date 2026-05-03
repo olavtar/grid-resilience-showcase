@@ -1,5 +1,5 @@
 # This project was developed with assistance from AI tools.
-# cuOpt — crew dispatch optimization (Apache 2.0, CPU sufficient for demo scale)
+# cuOpt — crew dispatch optimization (Apache 2.0, L4 GPU)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -18,9 +18,16 @@ spec:
       labels:
         app.kubernetes.io/name: cuopt
     spec:
+      nodeSelector:
+        nvidia.com/gpu.product: NVIDIA-L4
+      runtimeClassName: nvidia
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
       containers:
         - name: cuopt
-          image: nvidia/cuopt:25.10.1-cuda12.9-py3.13
+          image: nvidia/cuopt:26.6.0a-cuda12.9-py3.14
           ports:
             - name: http
               containerPort: 5000
@@ -29,9 +36,11 @@ spec:
             requests:
               cpu: 500m
               memory: 2Gi
+              nvidia.com/gpu: 1
             limits:
               cpu: 2
               memory: 4Gi
+              nvidia.com/gpu: 1
           readinessProbe:
             httpGet:
               path: /cuopt/health
