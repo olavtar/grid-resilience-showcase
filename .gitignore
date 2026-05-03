@@ -1,0 +1,50 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+LAST_CHANGES.md
+PLAN.md
+.changes/
+.plans/
+
+# Purchased 3D assets (Fab license — never commit raw asset files)
+# See docs/plan.md Section 3.8 for procurement and build instructions
+assets/purchased/
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+.venv/
+
+# Training artifacts
+logs/
+checkpoints/
+videos/
+*.onnx
+*.pt
+*.zip
+
+
+# Node / TypeScript
+node_modules/
+*.tsbuildinfo
+# tsc emit landing in source dirs (outDir misconfigured or missing)
+console/frontend/src/**/*.js
+console/frontend/src/**/*.d.ts
+console/frontend/*.js
+console/frontend/*.d.ts
+
+# IDE
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+.coverage

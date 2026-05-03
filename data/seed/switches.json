@@ -1,0 +1,34 @@
+[
+  {
+    "id": "TS-01",
+    "location_asset_id": "P-020",
+    "from_feeder_id": "F-11",
+    "to_feeder_id": "F-13",
+    "state": "open",
+    "transfer_capacity_mw": 4.5
+  },
+  {
+    "id": "TS-02",
+    "location_asset_id": "P-067",
+    "from_feeder_id": "F-13",
+    "to_feeder_id": "F-14",
+    "state": "open",
+    "transfer_capacity_mw": 4.0
+  },
+  {
+    "id": "TS-03",
+    "location_asset_id": "P-080",
+    "from_feeder_id": "F-14",
+    "to_feeder_id": "F-11",
+    "state": "open",
+    "transfer_capacity_mw": 4.2
+  },
+  {
+    "id": "TS-04",
+    "location_asset_id": "P-055",
+    "from_feeder_id": "F-12",
+    "to_feeder_id": "F-14",
+    "state": "open",
+    "transfer_capacity_mw": 4.8
+  }
+]

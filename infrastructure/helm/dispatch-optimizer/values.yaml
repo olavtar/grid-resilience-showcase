@@ -1,0 +1,40 @@
+# This project was developed with assistance from AI tools.
+
+replicaCount: 1
+
+image:
+  repository: quay.io/jary/grid-resilience-dispatch-optimizer
+  tag: latest
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  create: true
+  name: dispatch-optimizer
+
+service:
+  port: 8080
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+kafka:
+  bootstrapServers: grid-kafka-bootstrap.grid-ops-infra.svc.cluster.local:9092
+  securityProtocol: PLAINTEXT
+
+database:
+  host: grid-postgres.grid-ops-infra.svc.cluster.local
+  port: 5432
+  name: gridops
+  user: gridops
+
+cuopt:
+  url: http://cuopt.grid-ops-services.svc.cluster.local:5000
+
+approvalMode: manual
+
+env: {}

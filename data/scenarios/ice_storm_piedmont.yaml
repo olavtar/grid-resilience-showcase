@@ -1,0 +1,49 @@
+# This project was developed with assistance from AI tools.
+# Scenario: Ice Storm — Piedmont NC
+# 18-hour ice storm on the distribution corridor between Burlington and Mebane, NC.
+
+id: ice_storm_piedmont
+name: "Ice Storm — Piedmont NC"
+description: >-
+  18-hour ice storm scenario on the Piedmont NC distribution corridor.
+  Freezing rain onset triggers escalated camera monitoring, AI defect detection,
+  crew dispatch optimization, and fault response with automatic switching.
+geography: piedmont_nc
+
+# Corridor bounding box
+lat_min: 36.05
+lat_max: 36.12
+lon_min: -79.55
+lon_max: -79.40
+
+# Cameras to escalate during Beat 3
+escalate_cameras:
+  - CAM-P037
+  - CAM-P041
+  - CAM-P052
+  - CAM-P063
+  - CAM-SUB-A
+
+# Fault scenario (Beat 6)
+fault:
+  feeder_id: F-12
+  segment_id: SEG-052
+  affected_customers: 847
+  lat: 36.088
+  lon: -79.465
+  switch_id: TS-04
+  customers_restored: 312
+  ami_meters: 20
+
+# Customer monitoring
+total_monitored_customers: 12400
+
+# Beat timing hints (seconds between beats in auto-advance mode)
+beat_timing:
+  forecast: 0
+  triage: 10
+  escalate: 8
+  detect: 12
+  dispatch: 10
+  storm: 15
+  trace: 10

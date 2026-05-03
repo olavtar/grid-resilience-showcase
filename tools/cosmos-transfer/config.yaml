@@ -1,0 +1,48 @@
+# This project was developed with assistance from AI tools.
+# Cosmos Transfer 2.5 weather augmentation configuration
+# Reference: Cosmos Cookbook "ITS Weather Augmentation" recipe
+
+weather_conditioning:
+  weather: "overcast, ice accumulation, freezing rain"
+  lighting: "twilight, overcast"
+  surface: "ice, frost"
+  num_inference_steps: 30
+  strength: 0.6
+
+# Image set from plan Section 10 — fixed camera perspectives
+# Base images go in data/images/base/, augmented output in data/images/augmented/
+image_set:
+  - camera_id: CAM-P037
+    description: "Pole-top, looking at crossarm"
+    expected_finding: null  # baseline, no defect
+    filename: cam_p037_01.jpg
+
+  - camera_id: CAM-P037
+    description: "Same camera, later frame — cracked crossarm visible"
+    expected_finding: cracked_crossarm
+    filename: cam_p037_02.jpg
+
+  - camera_id: CAM-P041
+    description: "Pole-top, concrete crossarm"
+    expected_finding: null
+    filename: cam_p041_01.jpg
+
+  - camera_id: CAM-P052
+    description: "Span monitor, looking along conductor — vegetation encroachment"
+    expected_finding: vegetation_encroachment
+    filename: cam_p052_01.jpg
+
+  - camera_id: CAM-P052
+    description: "Same camera, adjacent span"
+    expected_finding: vegetation_encroachment
+    filename: cam_p052_02.jpg
+
+  - camera_id: CAM-SUB-A
+    description: "Substation security, transformer bank"
+    expected_finding: null
+    filename: cam_sub_a_01.jpg
+
+  - camera_id: CAM-P063
+    description: "Pole-top, ice accumulation visible"
+    expected_finding: ice_loading
+    filename: cam_p063_01.jpg

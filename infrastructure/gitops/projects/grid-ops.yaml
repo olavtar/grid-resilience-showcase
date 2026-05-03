@@ -1,0 +1,27 @@
+# This project was developed with assistance from AI tools.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: grid-resilience
+  namespace: openshift-gitops
+spec:
+  description: Grid Resilience Operations Center
+  sourceRepos:
+    - "https://github.com/jeremyary/grid-resilience-showcase.git"
+  destinations:
+    - namespace: grid-ops-infra
+      server: https://kubernetes.default.svc
+    - namespace: grid-ops-ai
+      server: https://kubernetes.default.svc
+    - namespace: grid-ops-services
+      server: https://kubernetes.default.svc
+    - namespace: grid-ops-console
+      server: https://kubernetes.default.svc
+    - namespace: grid-ops-monitoring
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"

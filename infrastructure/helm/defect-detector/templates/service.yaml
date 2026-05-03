@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: defect-detector
+  labels:
+    {{- include "defect-detector.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "defect-detector.selectorLabels" . | nindent 4 }}

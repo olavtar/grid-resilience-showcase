@@ -1,0 +1,101 @@
+[
+  {
+    "id": "CAM-P037",
+    "camera_type": "pole_mounted",
+    "asset_id": "P-037",
+    "lat": 36.0753,
+    "lon": -79.4167,
+    "field_of_view": "crossarm",
+    "status": "active",
+    "baseline_interval_seconds": 3600,
+    "escalated_interval_seconds": 30
+  },
+  {
+    "id": "CAM-P041",
+    "camera_type": "pole_mounted",
+    "asset_id": "P-041",
+    "lat": 36.0705,
+    "lon": -79.4117,
+    "field_of_view": "crossarm",
+    "status": "active",
+    "baseline_interval_seconds": 3600,
+    "escalated_interval_seconds": 30
+  },
+  {
+    "id": "CAM-P052",
+    "camera_type": "span_monitor",
+    "asset_id": "P-052",
+    "lat": 36.0573,
+    "lon": -79.3980,
+    "field_of_view": "span",
+    "status": "active",
+    "baseline_interval_seconds": 3600,
+    "escalated_interval_seconds": 30
+  },
+  {
+    "id": "CAM-P063",
+    "camera_type": "pole_mounted",
+    "asset_id": "P-063",
+    "lat": 36.1076,
+    "lon": -79.5140,
+    "field_of_view": "crossarm",
+    "status": "active",
+    "baseline_interval_seconds": 3600,
+    "escalated_interval_seconds": 30
+  },
+  {
+    "id": "CAM-SUB-A",
+    "camera_type": "substation_security",
+    "asset_id": "SUB-A",
+    "lat": 36.0958,
+    "lon": -79.4380,
+    "field_of_view": "transformer_bank",
+    "status": "active",
+    "baseline_interval_seconds": 3600,
+    "escalated_interval_seconds": 30
+  },
+  {
+    "id": "CAM-SUB-B",
+    "camera_type": "substation_security",
+    "asset_id": "SUB-B",
+    "lat": 36.0980,
+    "lon": -79.5020,
+    "field_of_view": "perimeter",
+    "status": "active",
+    "baseline_interval_seconds": 3600,
+    "escalated_interval_seconds": 30
+  },
+  {
+    "id": "CAM-P015",
+    "camera_type": "span_monitor",
+    "asset_id": "P-015",
+    "lat": 36.1138,
+    "lon": -79.4190,
+    "field_of_view": "span",
+    "status": "active",
+    "baseline_interval_seconds": 3600,
+    "escalated_interval_seconds": 30
+  },
+  {
+    "id": "CAM-P046",
+    "camera_type": "span_monitor",
+    "asset_id": "P-046",
+    "lat": 36.0645,
+    "lon": -79.4055,
+    "field_of_view": "span",
+    "status": "active",
+    "baseline_interval_seconds": 3600,
+    "escalated_interval_seconds": 30
+  },
+  {
+    "id": "CAM-P073",
+    "camera_type": "span_monitor",
+    "asset_id": "P-073",
+    "lat": 36.0908,
+    "lon": -79.5102,
+    "field_of_view": "span",
+    "status": "active",
+    "baseline_interval_seconds": 3600,
+    "escalated_interval_seconds": 30
+  }
+]

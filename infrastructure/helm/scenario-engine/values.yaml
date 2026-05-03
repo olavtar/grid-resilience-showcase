@@ -1,0 +1,31 @@
+# This project was developed with assistance from AI tools.
+
+replicaCount: 1
+
+image:
+  repository: quay.io/jary/grid-resilience-scenario-engine
+  tag: latest
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  create: true
+  name: scenario-engine
+
+service:
+  port: 8080
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+kafka:
+  bootstrapServers: grid-kafka-bootstrap.grid-ops-infra.svc.cluster.local:9092
+  securityProtocol: PLAINTEXT
+
+scenarioDir: /opt/app-root/src/data/scenarios
+
+env: {}

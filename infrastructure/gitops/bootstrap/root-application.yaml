@@ -1,0 +1,23 @@
+# This project was developed with assistance from AI tools.
+# Root App-of-Apps — apply this single resource to bootstrap everything.
+# Prerequisites: OpenShift GitOps Operator (ArgoCD) installed via OperatorHub.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grid-resilience-root
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/jeremyary/grid-resilience-showcase.git
+    targetRevision: main
+    path: infrastructure/gitops/applications
+    directory:
+      recurse: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openshift-gitops
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

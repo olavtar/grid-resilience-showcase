@@ -1,0 +1,13 @@
+# This project was developed with assistance from AI tools.
+
+[package]
+title = "Grid Resilience Data Driver"
+version = "0.1.0"
+description = "Kafka-driven scene state updates for the substation digital twin"
+
+[dependencies]
+"omni.kit.usd" = {}
+
+[python.env]
+KAFKA_BOOTSTRAP_SERVERS = "localhost:9092"
+KAFKA_CONSUMER_GROUP_ID = "kit-substation"

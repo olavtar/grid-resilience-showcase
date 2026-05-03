@@ -1,0 +1,28 @@
+# This project was developed with assistance from AI tools.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: grid-ops-infra
+  labels:
+    app.kubernetes.io/part-of: grid-resilience
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: grid-ops-ai
+  labels:
+    app.kubernetes.io/part-of: grid-resilience
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: grid-ops-services
+  labels:
+    app.kubernetes.io/part-of: grid-resilience
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: grid-ops-console
+  labels:
+    app.kubernetes.io/part-of: grid-resilience

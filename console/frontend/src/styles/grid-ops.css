@@ -1,0 +1,332 @@
+/* This project was developed with assistance from AI tools. */
+/* Grid Resilience Operations Center — forked from industrial-ai-showcase/showcase.css */
+
+@import url("https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap");
+
+:root {
+  /* Shared showcase tokens */
+  --showcase--color--charcoal: #151515;
+  --showcase--color--red: #EE0000;
+  --showcase--color--red-dark: #A30000;
+  --showcase--color--gray-medium: #6A6E73;
+  --showcase--color--gray-light: #F0F0F0;
+  --showcase--color--border: #E0E0E0;
+  --showcase--color--card-bg: #F3F3F3;
+
+  /* Grid-specific tokens */
+  --grid--color--risk-low: #3E8635;
+  --grid--color--risk-medium: #F0AB00;
+  --grid--color--risk-high: #EE0000;
+  --grid--color--risk-critical: #A30000;
+  --grid--color--energized: #3E8635;
+  --grid--color--de-energized: #6A6E73;
+  --grid--color--faulted: #A30000;
+  --grid--color--camera-active: #0066CC;
+  --grid--color--camera-escalated: #F0AB00;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: #151515;
+  background: #ffffff;
+  overflow: hidden;
+  height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Public Sans", sans-serif;
+}
+
+/* Masthead — 56px dark charcoal bar */
+.grid-masthead {
+  height: 56px;
+  background: var(--showcase--color--charcoal);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.grid-masthead__title {
+  font-family: "Public Sans", sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Pill toggle group */
+.grid-view-toggle {
+  display: flex;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  padding: 2px;
+}
+
+.grid-view-toggle__pill {
+  padding: 6px 16px;
+  border-radius: 9999px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.grid-view-toggle__pill:hover {
+  color: #ffffff;
+}
+
+.grid-view-toggle__pill--active {
+  background: var(--showcase--color--red);
+  color: #ffffff;
+}
+
+/* Main layout */
+.grid-layout {
+  display: flex;
+  height: calc(100vh - 56px - 40px);
+  overflow: hidden;
+}
+
+.grid-layout__left {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+}
+
+.grid-layout__right {
+  width: 420px;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--grid--color--border);
+  overflow-y: auto;
+}
+
+/* Customer impact banner */
+.grid-impact-banner {
+  display: none;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 24px;
+  background: #FFF3CD;
+  border-left: 4px solid var(--grid--color--risk-medium);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.grid-impact-banner--active {
+  display: flex;
+}
+
+.grid-impact-banner--restored {
+  background: #D4EDDA;
+  border-left-color: var(--grid--color--risk-low);
+}
+
+/* Cards */
+.grid-card {
+  background: var(--showcase--color--card-bg);
+  border: 1px solid var(--showcase--color--border);
+  border-radius: 4px;
+  margin: 8px;
+  overflow: hidden;
+}
+
+.grid-card__header {
+  padding: 12px 16px;
+  font-family: "Public Sans", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-bottom: 1px solid var(--showcase--color--border);
+}
+
+.grid-card__body {
+  padding: 12px 16px;
+}
+
+.grid-card__body--flush {
+  padding: 0;
+}
+
+/* Event indicator dots */
+.grid-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.grid-dot--weather { background: #0066CC; }
+.grid-dot--risk { background: #F0AB00; }
+.grid-dot--camera { background: #6753AC; }
+.grid-dot--dispatch { background: #3E8635; }
+.grid-dot--fault { background: #A30000; }
+.grid-dot--restoration { background: #3E8635; }
+.grid-dot--system { background: #6A6E73; }
+
+/* Event stream rows */
+.grid-event-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 16px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--showcase--color--border);
+}
+
+.grid-event-row__time {
+  color: var(--showcase--color--gray-medium);
+  font-family: monospace;
+  font-size: 11px;
+  min-width: 60px;
+}
+
+.grid-event-row__title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Metric cards */
+.grid-metric {
+  padding: 12px 16px;
+  border-left: 3px solid var(--showcase--color--border);
+}
+
+.grid-metric__label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--showcase--color--gray-medium);
+}
+
+.grid-metric__value {
+  font-size: 24px;
+  font-weight: 700;
+  font-family: "Public Sans", sans-serif;
+  margin-top: 2px;
+}
+
+/* Monospace data display */
+.grid-mono {
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--showcase--color--gray-medium);
+}
+
+/* Scenario control bar */
+.grid-controls {
+  height: 40px;
+  background: var(--showcase--color--charcoal);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 24px;
+  flex-shrink: 0;
+}
+
+.grid-controls__button {
+  padding: 4px 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: transparent;
+  color: #ffffff;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.grid-controls__button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.grid-controls__button--primary {
+  background: var(--showcase--color--red);
+  border-color: var(--showcase--color--red);
+}
+
+.grid-controls__button--primary:hover {
+  background: var(--showcase--color--red-dark);
+}
+
+.grid-controls__status {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  margin-left: auto;
+  font-family: monospace;
+}
+
+/* Map container */
+.grid-map {
+  width: 100%;
+  height: 100%;
+}
+
+/* Risk table */
+.grid-risk-table {
+  width: 100%;
+  font-size: 12px;
+  border-collapse: collapse;
+}
+
+.grid-risk-table th {
+  text-align: left;
+  padding: 6px 8px;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--showcase--color--gray-medium);
+  border-bottom: 2px solid var(--showcase--color--border);
+}
+
+.grid-risk-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--showcase--color--border);
+}
+
+/* Risk score badge */
+.grid-risk-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.grid-risk-badge--low { background: var(--grid--color--risk-low); }
+.grid-risk-badge--medium { background: var(--grid--color--risk-medium); color: #151515; }
+.grid-risk-badge--high { background: var(--grid--color--risk-high); }
+.grid-risk-badge--critical { background: var(--grid--color--risk-critical); }
+
+/* Feeder line pulse animation */
+@keyframes grid-fault-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.grid-faulted-line {
+  animation: grid-fault-pulse 1s ease-in-out infinite;
+}

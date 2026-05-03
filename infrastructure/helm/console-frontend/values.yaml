@@ -1,0 +1,29 @@
+# This project was developed with assistance from AI tools.
+
+replicaCount: 1
+
+image:
+  repository: quay.io/jary/grid-resilience-console-frontend
+  tag: latest
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  create: true
+  name: console-frontend
+
+service:
+  port: 8080
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+route:
+  enabled: true
+  timeout: 300s
+
+env: {}

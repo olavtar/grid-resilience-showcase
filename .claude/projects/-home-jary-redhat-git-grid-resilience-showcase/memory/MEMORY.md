@@ -1,0 +1,8 @@
+- [No empty scaffold directories](feedback_no_empty_scaffold.md) — Don't pre-create empty dirs with .gitkeep; create when actually needed
+- [Helm charts alongside services](feedback_gitops_charts_alongside.md) — Build charts when services become deployable, not deferred to Phase F
+- [Quay registry org](reference_quay_registry.md) — Container images use quay.io/jary/ prefix
+- [No demo/live mode split](feedback_no_demo_mode.md) — Target real inference directly, GPUs are available locally and on cluster
+- [No silent deviations](feedback_no_silent_deviations.md) — Never defer, fall back, or deviate from the plan without stopping to discuss first
+- [Check in before Kit/IsaacSim work](feedback_kit_isaacsim_check_in.md) — User has existing code to reference; stop and ask before writing Kit/streaming code
+- [Kit streaming reference repo](reference_kit_streaming_repo.md) — /home/jary/redhat/git/nvidia-kit-app-streaming for WebRTC streaming pattern
+- [Cluster prerequisites](project_cluster_prereqs.md) — NFD + GPU Operator are pre-installed, don't deploy via GitOps

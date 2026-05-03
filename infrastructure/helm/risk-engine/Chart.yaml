@@ -1,0 +1,7 @@
+# This project was developed with assistance from AI tools.
+apiVersion: v2
+name: risk-engine
+description: Risk Engine — asset risk scoring for the Grid Resilience Operations Center
+version: 0.1.0
+appVersion: "0.1.0"
+type: application

@@ -1,0 +1,210 @@
+# This project was developed with assistance from AI tools.
+# Local development environment: Kafka (Strimzi/KRaft) + PostgreSQL
+
+services:
+  kafka:
+    image: quay.io/strimzi/kafka:0.44.0-kafka-3.8.1
+    container_name: grid-kafka
+    command:
+      - "sh"
+      - "-c"
+      - |
+        export CLUSTER_ID=$$(bin/kafka-storage.sh random-uuid) && \
+        bin/kafka-storage.sh format -t $$CLUSTER_ID -c config/kraft/server.properties && \
+        bin/kafka-server-start.sh config/kraft/server.properties \
+          --override listeners=PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093 \
+          --override advertised.listeners=PLAINTEXT://localhost:9092 \
+          --override controller.quorum.voters=1@localhost:9093 \
+          --override node.id=1 \
+          --override process.roles=broker,controller \
+          --override controller.listener.names=CONTROLLER \
+          --override inter.broker.listener.name=PLAINTEXT \
+          --override listener.security.protocol.map=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT \
+          --override offsets.topic.replication.factor=1 \
+          --override transaction.state.log.replication.factor=1 \
+          --override transaction.state.log.min.isr=1
+    ports:
+      - "9092:9092"
+    environment:
+      LOG_DIR: /tmp/logs
+    healthcheck:
+      test: ["CMD-SHELL", "bin/kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  kafka-topics:
+    image: quay.io/strimzi/kafka:0.44.0-kafka-3.8.1
+    container_name: grid-kafka-topics
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command:
+      - "sh"
+      - "-c"
+      - |
+        for topic in \
+          grid.weather.forecast \
+          grid.weather.alerts \
+          grid.assets.risk-scores \
+          grid.cameras.escalate \
+          grid.cameras.frames \
+          grid.cameras.findings \
+          grid.crew.work-orders \
+          grid.crew.dispatch \
+          grid.crew.telemetry \
+          grid.faults.detected \
+          grid.faults.restoration \
+          grid.ami.outages \
+          grid.customer.impact \
+          grid.ops.events; do
+          bin/kafka-topics.sh --bootstrap-server kafka:9092 \
+            --create --if-not-exists \
+            --topic $$topic \
+            --partitions 3 \
+            --replication-factor 1
+        done
+        echo "All topics created."
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: grid-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: gridops
+      POSTGRES_USER: gridops
+      POSTGRES_PASSWORD: gridops
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./data/seed/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gridops"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  weather-service:
+    build:
+      context: .
+      dockerfile: services/weather-service/Containerfile
+    container_name: grid-weather-service
+    ports:
+      - "8081:8080"
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      CORRDIFF_NIM_URL: http://host.docker.internal:8000
+    depends_on:
+      kafka-topics:
+        condition: service_completed_successfully
+
+  camera-simulator:
+    build:
+      context: .
+      dockerfile: services/camera-simulator/Containerfile
+    container_name: grid-camera-simulator
+    ports:
+      - "8082:8080"
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: gridops
+      DB_USER: gridops
+      DB_PASSWORD: gridops
+      IMAGE_DIR: /opt/app-root/src/data/images
+    depends_on:
+      kafka-topics:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+
+  risk-engine:
+    build:
+      context: .
+      dockerfile: services/risk-engine/Containerfile
+    container_name: grid-risk-engine
+    ports:
+      - "8083:8080"
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: gridops
+      DB_USER: gridops
+      DB_PASSWORD: gridops
+    depends_on:
+      kafka-topics:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+
+  defect-detector:
+    build:
+      context: .
+      dockerfile: services/defect-detector/Containerfile
+    container_name: grid-defect-detector
+    ports:
+      - "8084:8080"
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: gridops
+      DB_USER: gridops
+      DB_PASSWORD: gridops
+      VLLM_BASE_URL: http://host.docker.internal:8001
+    depends_on:
+      kafka-topics:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+
+  dispatch-optimizer:
+    build:
+      context: .
+      dockerfile: services/dispatch-optimizer/Containerfile
+    container_name: grid-dispatch-optimizer
+    ports:
+      - "8085:8080"
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: gridops
+      DB_USER: gridops
+      DB_PASSWORD: gridops
+      CUOPT_URL: http://host.docker.internal:5000
+    depends_on:
+      kafka-topics:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+
+  console-backend:
+    build:
+      context: .
+      dockerfile: services/console-backend/Containerfile
+    container_name: grid-console-backend
+    ports:
+      - "8090:8090"
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: gridops
+      DB_USER: gridops
+      DB_PASSWORD: gridops
+      WEATHER_SERVICE_URL: http://weather-service:8080
+      RISK_ENGINE_URL: http://risk-engine:8080
+      DEFECT_DETECTOR_URL: http://defect-detector:8080
+      DISPATCH_OPTIMIZER_URL: http://dispatch-optimizer:8080
+      SCENARIO_ENGINE_URL: http://scenario-engine:8080
+    depends_on:
+      kafka-topics:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:

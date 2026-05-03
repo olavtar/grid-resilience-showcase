@@ -1,0 +1,7 @@
+# This project was developed with assistance from AI tools.
+apiVersion: v2
+name: kit-substation
+description: Kit Substation — Omniverse 3D digital twin with WebRTC streaming
+version: 0.1.0
+appVersion: "0.1.0"
+type: application

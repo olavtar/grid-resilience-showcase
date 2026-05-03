@@ -1,0 +1,49 @@
+# This project was developed with assistance from AI tools.
+# Adapted from nvidia-kit-app-streaming reference
+
+namespace: grid-ops-ai
+
+kitSubstation:
+  image:
+    repository: quay.io/jary/grid-resilience-kit-substation
+    tag: high
+    pullPolicy: IfNotPresent
+  gpu:
+    product: NVIDIA-L4
+    runtimeClassName: nvidia
+  resources:
+    requests:
+      cpu: 2
+      memory: 8Gi
+    limits:
+      cpu: 8
+      memory: 16Gi
+  cache:
+    storageClass: ""
+    size: 30Gi
+  sceneQuality: high
+
+kafka:
+  bootstrapServers: grid-kafka-bootstrap.grid-ops-infra.svc.cluster.local:9092
+
+coturn:
+  image:
+    repository: quay.io/coturn/coturn
+    tag: "4.7.0"
+  username: streaming
+  password: ""
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 1
+      memory: 512Mi
+
+stream:
+  width: 1920
+  height: 1080
+  fps: 30
+
+ngc:
+  apiKey: ""

@@ -1,0 +1,156 @@
+# This project was developed with assistance from AI tools.
+# All 14 Kafka topics for the grid ops platform
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: grid.weather.forecast
+  namespace: grid-ops-infra
+  labels:
+    strimzi.io/cluster: grid-kafka
+spec:
+  partitions: 3
+  replicas: 3
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: grid.weather.alerts
+  namespace: grid-ops-infra
+  labels:
+    strimzi.io/cluster: grid-kafka
+spec:
+  partitions: 3
+  replicas: 3
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: grid.assets.risk-scores
+  namespace: grid-ops-infra
+  labels:
+    strimzi.io/cluster: grid-kafka
+spec:
+  partitions: 3
+  replicas: 3
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: grid.cameras.escalate
+  namespace: grid-ops-infra
+  labels:
+    strimzi.io/cluster: grid-kafka
+spec:
+  partitions: 3
+  replicas: 3
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: grid.cameras.frames
+  namespace: grid-ops-infra
+  labels:
+    strimzi.io/cluster: grid-kafka
+spec:
+  partitions: 3
+  replicas: 3
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: grid.cameras.findings
+  namespace: grid-ops-infra
+  labels:
+    strimzi.io/cluster: grid-kafka
+spec:
+  partitions: 3
+  replicas: 3
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: grid.crew.work-orders
+  namespace: grid-ops-infra
+  labels:
+    strimzi.io/cluster: grid-kafka
+spec:
+  partitions: 3
+  replicas: 3
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: grid.crew.dispatch
+  namespace: grid-ops-infra
+  labels:
+    strimzi.io/cluster: grid-kafka
+spec:
+  partitions: 3
+  replicas: 3
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: grid.crew.telemetry
+  namespace: grid-ops-infra
+  labels:
+    strimzi.io/cluster: grid-kafka
+spec:
+  partitions: 3
+  replicas: 3
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: grid.faults.detected
+  namespace: grid-ops-infra
+  labels:
+    strimzi.io/cluster: grid-kafka
+spec:
+  partitions: 3
+  replicas: 3
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: grid.faults.restoration
+  namespace: grid-ops-infra
+  labels:
+    strimzi.io/cluster: grid-kafka
+spec:
+  partitions: 3
+  replicas: 3
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: grid.ami.outages
+  namespace: grid-ops-infra
+  labels:
+    strimzi.io/cluster: grid-kafka
+spec:
+  partitions: 3
+  replicas: 3
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: grid.customer.impact
+  namespace: grid-ops-infra
+  labels:
+    strimzi.io/cluster: grid-kafka
+spec:
+  partitions: 3
+  replicas: 3
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: grid.ops.events
+  namespace: grid-ops-infra
+  labels:
+    strimzi.io/cluster: grid-kafka
+spec:
+  partitions: 3
+  replicas: 3

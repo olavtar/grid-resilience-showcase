@@ -1,0 +1,101 @@
+# This project was developed with assistance from AI tools.
+
+[project]
+name = "grid-resilience-showcase"
+version = "0.1.0"
+description = "Grid Resilience Operations Center — Red Hat + NVIDIA energy-vertical demo"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0,<1.0",
+    "uvicorn[standard]>=0.34.0,<1.0",
+    "pydantic>=2.10.0,<3.0",
+    "pydantic-settings>=2.7.0,<3.0",
+    "confluent-kafka>=2.6.0,<3.0",
+    "httpx>=0.28.0,<1.0",
+    "psycopg[binary]>=3.2.0,<4.0",
+    "structlog>=24.4.0,<26.0",
+    "opentelemetry-api>=1.29.0,<2.0",
+    "opentelemetry-sdk>=1.29.0,<2.0",
+    "opentelemetry-instrumentation-fastapi>=0.50b0,<1.0",
+    "opentelemetry-exporter-otlp>=1.29.0,<2.0",
+    "pyyaml>=6.0.2,<7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0,<9.0",
+    "pytest-asyncio>=0.24.0,<1.0",
+    "pytest-cov>=6.0.0,<7.0",
+    "mypy>=1.13.0,<2.0",
+    "ruff>=0.8.0,<1.0",
+    "httpx>=0.28.0,<1.0",
+]
+
+[build-system]
+requires = ["setuptools>=75.0.0,<76.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["services/common"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "A",    # flake8-builtins
+    "S",    # flake8-bandit
+    "T20",  # flake8-print
+    "RUF",  # ruff-specific rules
+]
+ignore = [
+    "S101",  # assert usage allowed in tests
+    "S104",  # 0.0.0.0 binding is intentional for container services
+    "S105",  # hardcoded dev defaults overridden by env vars in deployment
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tools/**/*.py" = ["T201"]
+"data/seed/load_seed_data.py" = ["T201"]
+"kit-substation/**/*.py" = ["T201"]
+
+[tool.ruff.lint.isort]
+known-first-party = [
+    "grid_common",
+    "scenario_engine",
+    "weather_service",
+    "camera_simulator",
+    "risk_engine",
+    "defect_detector",
+    "dispatch_optimizer",
+    "console_backend",
+]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = [
+    "confluent_kafka.*",
+    "opentelemetry.*",
+    "yaml.*",
+    "sse_starlette.*",
+    "nemoguardrails.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
