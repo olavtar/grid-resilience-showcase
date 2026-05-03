@@ -51,6 +51,8 @@ spec:
           volumeMounts:
             - name: cache
               mountPath: /tmp/hf-cache
+            - name: cache
+              mountPath: /.cache
           ports:
             - name: http
               containerPort: 8000
