@@ -45,6 +45,11 @@ spec:
               value: {{ .Values.database.name | quote }}
             - name: DB_USER
               value: {{ .Values.database.user | quote }}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: grid-postgres-pguser-gridops
+                  key: password
             - name: WEATHER_SERVICE_URL
               value: {{ .Values.upstreamServices.weatherService | quote }}
             - name: RISK_ENGINE_URL

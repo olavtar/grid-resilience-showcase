@@ -45,6 +45,11 @@ spec:
               value: {{ .Values.database.name | quote }}
             - name: DB_USER
               value: {{ .Values.database.user | quote }}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: grid-postgres-pguser-gridops
+                  key: password
             - name: VLLM_BASE_URL
               value: {{ .Values.vllmBaseUrl | quote }}
             - name: VLLM_MODEL

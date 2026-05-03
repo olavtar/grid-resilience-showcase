@@ -45,6 +45,11 @@ spec:
               value: {{ .Values.database.name | quote }}
             - name: DB_USER
               value: {{ .Values.database.user | quote }}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: grid-postgres-pguser-gridops
+                  key: password
             - name: CUOPT_URL
               value: {{ .Values.cuopt.url | quote }}
             - name: APPROVAL_MODE

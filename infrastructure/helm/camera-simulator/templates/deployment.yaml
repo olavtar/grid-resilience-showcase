@@ -46,6 +46,11 @@ spec:
             - name: DB_USER
               value: {{ .Values.database.user | quote }}
             - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: grid-postgres-pguser-gridops
+                  key: password
+            - name: DB_PASSWORD
               value: {{ .Values.database.password | quote }}
             - name: IMAGE_DIR
               value: {{ .Values.imageDir | quote }}

@@ -28,12 +28,14 @@ class DatabaseSettings(BaseSettings):
     db_name: str = "gridops"
     db_user: str = "gridops"
     db_password: str = "gridops"
+    db_sslmode: str = "prefer"
 
     @property
     def dsn(self) -> str:
         return (
             f"postgresql://{self.db_user}:{self.db_password}"
             f"@{self.db_host}:{self.db_port}/{self.db_name}"
+            f"?sslmode={self.db_sslmode}"
         )
 
     model_config = {"env_prefix": ""}
