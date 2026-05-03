@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: cuopt
-          image: nvidia/cuopt:26.06-cuda12.9-py3.13
+          image: nvidia/cuopt:25.10.1-cuda12.9-py3.13
           ports:
             - name: http
               containerPort: 5000
