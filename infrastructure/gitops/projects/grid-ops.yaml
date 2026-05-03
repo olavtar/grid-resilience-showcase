@@ -19,6 +19,10 @@ spec:
       server: https://kubernetes.default.svc
     - namespace: grid-ops-monitoring
       server: https://kubernetes.default.svc
+    - namespace: openshift-operators
+      server: https://kubernetes.default.svc
+    - namespace: openshift-gitops
+      server: https://kubernetes.default.svc
   clusterResourceWhitelist:
     - group: ""
       kind: Namespace
