@@ -35,6 +35,14 @@ spec:
           env:
             - name: ACCEPT_EULA
               value: "Y"
+            - name: NGC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ngc-api-key
+                  key: key
+          volumeMounts:
+            - name: cache
+              mountPath: /opt/nim/.cache
           ports:
             - name: http
               containerPort: 8000
@@ -62,6 +70,10 @@ spec:
             initialDelaySeconds: 300
             periodSeconds: 30
             failureThreshold: 10
+      volumes:
+        - name: cache
+          emptyDir:
+            sizeLimit: 50Gi
 ---
 apiVersion: v1
 kind: Service

@@ -46,6 +46,11 @@ spec:
                   name: hf-token
                   key: token
                   optional: true
+            - name: HF_HOME
+              value: /tmp/hf-cache
+          volumeMounts:
+            - name: cache
+              mountPath: /tmp/hf-cache
           ports:
             - name: http
               containerPort: 8000
@@ -73,6 +78,10 @@ spec:
             initialDelaySeconds: 300
             periodSeconds: 30
             failureThreshold: 10
+      volumes:
+        - name: cache
+          emptyDir:
+            sizeLimit: 50Gi
 ---
 apiVersion: v1
 kind: Service
