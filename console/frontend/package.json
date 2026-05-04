@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@nvidia/omniverse-webrtc-streaming-library": "^5.17.0",
     "@patternfly/react-core": "^6.4.3",
     "@patternfly/react-icons": "^6.4.0",
     "@patternfly/react-styles": "^6.4.0",
