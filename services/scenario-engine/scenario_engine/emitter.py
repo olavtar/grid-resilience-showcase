@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
@@ -15,11 +16,13 @@ from grid_common.events import (
     CustomerImpact,
     FaultEvent,
     FaultType,
+    GridCell,
     OpsEvent,
     RestorationEvent,
     Severity,
     SwitchAction,
     WeatherAlert,
+    WeatherForecast,
     WorkOrder,
     WorkOrderPriority,
 )
@@ -28,8 +31,49 @@ from grid_common.kafka import publish_event
 logger = structlog.get_logger()
 
 
+def _build_forecast_grid_cells(hour: int) -> list[GridCell]:
+    """Build grid cells with progressive storm intensity."""
+    intensity = min(hour / 18.0, 1.0)
+    cells = []
+    for lat in [36.06, 36.08, 36.10, 36.12]:
+        for lon in [-79.50, -79.47, -79.44]:
+            north_factor = (lat - 36.04) / 0.08
+            wind = 5.0 + 20.0 * intensity * north_factor
+            precip = 2.0 + 15.0 * intensity * north_factor
+            freezing = intensity > 0.3 and lat >= 36.08
+            cells.append(
+                GridCell(
+                    lat=lat,
+                    lon=lon,
+                    t2m_k=275.0 - 8.0 * intensity * north_factor,
+                    u10m_mps=wind * 0.7,
+                    v10m_mps=wind * 0.3,
+                    tp_mm=precip,
+                    cfrzr=freezing,
+                    crain=not freezing,
+                    cicep=False,
+                    csnow=False,
+                )
+            )
+    return cells
+
+
 def emit_forecast_events(producer: Producer, config: dict[str, Any], trace_id: str) -> int:
-    """Emit weather alert events for the forecast beat."""
+    """Emit weather forecast and alert events for the forecast beat."""
+    count = 0
+    now = datetime.now(tz=UTC)
+
+    for hour in [0, 6, 12, 18]:
+        forecast = WeatherForecast(
+            forecast_hour=hour,
+            valid_time=now,
+            grid_cells=_build_forecast_grid_cells(hour),
+            trace_id=trace_id,
+            source_service="scenario-engine",
+        )
+        publish_event(producer, "grid.weather.forecast", forecast)
+        count += 1
+
     alert = WeatherAlert(
         alert_type="freezing_rain",
         severity=Severity.WARNING,
@@ -56,7 +100,7 @@ def emit_forecast_events(producer: Producer, config: dict[str, Any], trace_id: s
     )
     publish_event(producer, "grid.ops.events", ops)
     producer.flush()
-    return 2
+    return count + 2
 
 
 def emit_escalate_events(producer: Producer, config: dict[str, Any], trace_id: str) -> int:

@@ -5,7 +5,7 @@ replicaCount: 1
 image:
   repository: quay.io/jary/grid-resilience-camera-simulator
   tag: latest
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 serviceAccount:
   create: true
