@@ -5,9 +5,11 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import threading
 from collections import deque
+from pathlib import Path
 
 import httpx
 import psycopg
@@ -126,12 +128,19 @@ def consumer_loop(
                 analyze_frame(image_url, client, settings)
             )
 
+            encoded_image = None
+            if findings:
+                image_path = Path(image_url)
+                if image_path.exists():
+                    encoded_image = base64.b64encode(image_path.read_bytes()).decode()
+
             inspection = InspectionFinding(
                 camera_id=camera_id,
                 asset_id=asset_id,
                 frame_event_id=frame_event_id,
                 findings=findings,
                 inference_latency_ms=latency_ms,
+                image_data=encoded_image,
                 trace_id=trace_id,
                 source_service="defect-detector",
             )

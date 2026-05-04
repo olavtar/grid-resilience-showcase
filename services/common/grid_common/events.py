@@ -191,6 +191,9 @@ class InspectionFinding(GridEvent):
     findings: list[DefectFinding]
     model: str = "cosmos-reason-2-8b"
     inference_latency_ms: float | None = None
+    image_data: str | None = Field(
+        default=None, description="Base64-encoded image, included when findings are present"
+    )
 
 
 class CameraEscalate(GridEvent):

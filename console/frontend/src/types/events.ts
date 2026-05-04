@@ -27,6 +27,7 @@ export interface InspectionFinding extends GridEvent {
   findings: DefectFinding[];
   model: string;
   inference_latency_ms?: number;
+  image_data?: string;
 }
 
 export interface DefectFinding {
