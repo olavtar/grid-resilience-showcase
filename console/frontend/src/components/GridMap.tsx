@@ -112,16 +112,34 @@ export function GridMap({ assets, segments, cameras, riskScores, faults, dispatc
         },
       });
 
+      const diamondSize = 16;
+      const canvas = document.createElement("canvas");
+      canvas.width = diamondSize;
+      canvas.height = diamondSize;
+      const ctx = canvas.getContext("2d")!;
+      const half = diamondSize / 2;
+      ctx.beginPath();
+      ctx.moveTo(half, 1);
+      ctx.lineTo(diamondSize - 1, half);
+      ctx.lineTo(half, diamondSize - 1);
+      ctx.lineTo(1, half);
+      ctx.closePath();
+      ctx.fillStyle = "#0066CC";
+      ctx.fill();
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      map.addImage("diamond", { width: diamondSize, height: diamondSize, data: new Uint8Array(ctx.getImageData(0, 0, diamondSize, diamondSize).data) });
+
       map.addSource(SOURCE_IDS.cameras, { type: "geojson", data: EMPTY_FC });
       map.addLayer({
         id: "cameras-layer",
-        type: "circle",
+        type: "symbol",
         source: SOURCE_IDS.cameras,
-        paint: {
-          "circle-radius": 5,
-          "circle-color": "#0066CC",
-          "circle-stroke-width": 1,
-          "circle-stroke-color": "#ffffff",
+        layout: {
+          "icon-image": "diamond",
+          "icon-size": 1,
+          "icon-allow-overlap": true,
         },
       });
 
