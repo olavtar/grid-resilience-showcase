@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coturn
+  namespace: {{ include "kit-substation.namespace" . }}
+  labels:
+    app.kubernetes.io/name: coturn
+    {{- include "kit-substation.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: coturn
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: coturn
+    spec:
+      serviceAccountName: coturn
+      containers:
+        - name: coturn
+          image: {{ .Values.coturn.image.repository }}:{{ .Values.coturn.image.tag }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              sed "s|TURN_PASSWORD_PLACEHOLDER|${TURN_PASSWORD}|g" \
+                /etc/coturn/config/turnserver.conf > /tmp/turnserver.conf
+              exec turnserver -c /tmp/turnserver.conf
+          env:
+            - name: TURN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: coturn-auth
+                  key: password
+          ports:
+            - name: turn
+              containerPort: 3478
+              protocol: TCP
+            - name: turns
+              containerPort: 5349
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /etc/coturn/config
+              readOnly: true
+            - name: tls
+              mountPath: /etc/coturn/tls
+              readOnly: true
+          resources:
+            requests:
+              cpu: {{ .Values.coturn.resources.requests.cpu }}
+              memory: {{ .Values.coturn.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.coturn.resources.limits.cpu | quote }}
+              memory: {{ .Values.coturn.resources.limits.memory }}
+      volumes:
+        - name: config
+          configMap:
+            name: coturn-config
+        - name: tls
+          secret:
+            secretName: coturn-tls

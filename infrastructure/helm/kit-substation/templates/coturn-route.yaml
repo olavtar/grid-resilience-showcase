@@ -1,18 +1,18 @@
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: kit-substation
+  name: turn
   namespace: {{ include "kit-substation.namespace" . }}
   labels:
-    app.kubernetes.io/name: kit-substation
+    app.kubernetes.io/name: coturn
     {{- include "kit-substation.labels" . | nindent 4 }}
   annotations:
     haproxy.router.openshift.io/timeout: 1h
 spec:
-  tls:
-    termination: passthrough
   to:
     kind: Service
-    name: kit-substation
+    name: coturn
   port:
-    targetPort: signaling-tls
+    targetPort: turns
+  tls:
+    termination: passthrough
