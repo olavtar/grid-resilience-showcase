@@ -8,11 +8,18 @@ interface ScenarioControlsProps {
   onReset?: () => void;
 }
 
-const BEATS = ["forecast", "triage", "escalate", "detect", "dispatch", "storm", "trace"];
+const BEATS = [
+  { id: "forecast", label: "Forecast" },
+  { id: "triage", label: "Triage" },
+  { id: "escalate", label: "Escalate" },
+  { id: "detect", label: "Detect" },
+  { id: "dispatch", label: "Dispatch" },
+  { id: "storm", label: "Storm" },
+  { id: "trace", label: "Trace" },
+];
 
 export function ScenarioControls({ onReset }: ScenarioControlsProps) {
   const [beat, setBeat] = useState("idle");
-  const [solveTime] = useState<string | null>(null);
 
   const post = useCallback(async (action: string) => {
     try {
@@ -27,7 +34,7 @@ export function ScenarioControls({ onReset }: ScenarioControlsProps) {
     }
   }, [onReset]);
 
-  const beatIndex = BEATS.indexOf(beat);
+  const beatIndex = BEATS.findIndex((b) => b.id === beat);
 
   return (
     <div className="grid-controls">
@@ -46,37 +53,35 @@ export function ScenarioControls({ onReset }: ScenarioControlsProps) {
       <button className="grid-controls__button" onClick={() => post("reset")}>
         Reset
       </button>
-      <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4 }}>
+      <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 2 }}>
         {BEATS.map((b, i) => {
-          const isActive = b === beat;
+          const isActive = b.id === beat;
           const isPast = beatIndex >= 0 && i < beatIndex;
           return (
-            <div key={b} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <div
+            <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <span
                 style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: "50%",
-                  background: isActive ? "#3E8635" : isPast ? "rgba(62,134,53,0.5)" : "rgba(255,255,255,0.25)",
-                  border: isActive ? "2px solid #fff" : "none",
+                  fontSize: 11,
+                  fontFamily: "Inter, sans-serif",
+                  fontWeight: isActive ? 600 : 400,
+                  color: isActive ? "#3E8635" : isPast ? "rgba(62,134,53,0.7)" : "rgba(255,255,255,0.35)",
                   transition: "all 0.2s ease",
+                  padding: "2px 4px",
+                  borderRadius: 3,
+                  background: isActive ? "rgba(62,134,53,0.15)" : "transparent",
                 }}
-                title={b}
-              />
+              >
+                {b.label}
+              </span>
               {i < BEATS.length - 1 && (
-                <div style={{
-                  width: 12,
-                  height: 2,
-                  background: isPast ? "rgba(62,134,53,0.5)" : "rgba(255,255,255,0.15)",
-                }} />
+                <span style={{
+                  fontSize: 10,
+                  color: isPast ? "rgba(62,134,53,0.5)" : "rgba(255,255,255,0.2)",
+                }}>›</span>
               )}
             </div>
           );
         })}
-        <span style={{ marginLeft: 8, fontSize: 11, color: "rgba(255,255,255,0.6)", fontFamily: "monospace" }}>
-          {beat === "idle" ? "ready" : beat}
-          {solveTime && ` | cuOpt: ${solveTime}`}
-        </span>
       </div>
     </div>
   );

@@ -85,10 +85,15 @@ def consumer_loop(
                     risk_scores[s.asset_id] = s
 
             top = max(scored, key=lambda s: s.composite_score) if scored else None
+            if forecast_hour < 18:
+                producer.flush()
+                logger.info("risk_scores_computed", count=len(scored), hour=forecast_hour)
+                continue
             ops = OpsEvent(
                 category="risk",
                 title=f"Risk scores computed for {len(scored)} assets",
-                detail=f"Top risk: {top.asset_id} at {top.composite_score:.2f}"
+                detail=f"Forecast hour {forecast_hour}. "
+                f"Top risk: {top.asset_id} at {top.composite_score:.2f}"
                 if top
                 else "No assets scored",
                 severity=Severity.INFO,
