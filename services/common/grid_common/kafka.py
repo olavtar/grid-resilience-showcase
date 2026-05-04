@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import uuid
 from typing import Any
 
 import structlog
@@ -44,13 +45,14 @@ def create_consumer(
     settings: KafkaSettings,
     group_id: str | None = None,
     topics: list[str] | None = None,
-    auto_offset_reset: str = "earliest",
+    auto_offset_reset: str = "latest",
 ) -> Consumer:
     """Create a confluent-kafka Consumer subscribed to topics."""
     config = _build_config(settings)
-    config["group.id"] = group_id or settings.kafka_consumer_group_id
+    gid = group_id or settings.kafka_consumer_group_id
+    config["group.id"] = f"{gid}-{uuid.uuid4().hex[:8]}"
     config["auto.offset.reset"] = auto_offset_reset
-    config["enable.auto.commit"] = True
+    config["enable.auto.commit"] = False
 
     consumer = Consumer(config)
     if topics:
