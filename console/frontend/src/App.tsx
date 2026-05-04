@@ -26,7 +26,7 @@ export default function App() {
         {activeView === "dispatch" && <DispatchView stream={stream} />}
         {activeView === "platform" && <PlatformView />}
       </div>
-      <ScenarioControls />
+      <ScenarioControls onReset={stream.reset} />
     </div>
   );
 }

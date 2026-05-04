@@ -13,6 +13,7 @@ interface GridState {
   faults: FaultEvent[];
   customerImpact: CustomerImpact | null;
   connected: boolean;
+  reset: () => void;
 }
 
 export function useEventStream(): GridState {
@@ -74,5 +75,14 @@ export function useEventStream(): GridState {
     };
   }, [connect]);
 
-  return { events, riskScores, findings, dispatches, faults, customerImpact, connected };
+  const reset = useCallback(() => {
+    setEvents([]);
+    setRiskScores(new Map());
+    setFindings([]);
+    setDispatches([]);
+    setFaults([]);
+    setCustomerImpact(null);
+  }, []);
+
+  return { events, riskScores, findings, dispatches, faults, customerImpact, connected, reset };
 }
