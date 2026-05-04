@@ -12,7 +12,7 @@ RUN npm run build
 FROM registry.access.redhat.com/ubi9/nginx-124:latest
 
 COPY --from=build /opt/app-root/src/dist /opt/app-root/src
-COPY console/frontend/nginx.conf /etc/nginx/nginx.conf
+COPY console/frontend/api-proxy.conf /opt/app-root/etc/nginx.default.d/api-proxy.conf
 
 EXPOSE 8080
 
