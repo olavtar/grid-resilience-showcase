@@ -47,6 +47,7 @@ export function OperationsView({ stream }: OperationsViewProps) {
           riskScores={stream.riskScores}
           faults={stream.faults}
           dispatches={stream.dispatches}
+          scenarioActive={stream.events.length > 0}
         />
       </div>
       <div className="grid-layout__right">

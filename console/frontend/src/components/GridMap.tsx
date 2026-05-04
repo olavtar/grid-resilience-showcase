@@ -13,6 +13,7 @@ interface GridMapProps {
   riskScores: Map<string, AssetRiskScore>;
   faults: FaultEvent[];
   dispatches: DispatchAssignment[];
+  scenarioActive: boolean;
 }
 
 function riskColor(score: number): string {
@@ -58,7 +59,7 @@ const WEATHER_POLYGON: Feature<Polygon> = {
   properties: {},
 };
 
-export function GridMap({ assets, segments, cameras, riskScores, faults, dispatches }: GridMapProps) {
+export function GridMap({ assets, segments, cameras, riskScores, faults, dispatches, scenarioActive }: GridMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [mapReady, setMapReady] = useState(false);
@@ -229,7 +230,7 @@ export function GridMap({ assets, segments, cameras, riskScores, faults, dispatc
       }));
     (map.getSource(SOURCE_IDS.routes) as maplibregl.GeoJSONSource)?.setData(fc(routeFeatures));
 
-    const hasWeather = riskScores.size > 0 || faults.length > 0;
+    const hasWeather = scenarioActive;
     (map.getSource(SOURCE_IDS.weather) as maplibregl.GeoJSONSource)?.setData(
       hasWeather ? fc([WEATHER_POLYGON]) : EMPTY_FC,
     );
