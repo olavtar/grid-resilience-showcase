@@ -11,7 +11,7 @@ class DefectDetectorSettings(ServiceSettings):
     otel_service_name: str = "defect-detector"
     kafka_consumer_group_id: str = "defect-detector"
     vllm_base_url: str = "http://localhost:8000"
-    vllm_model: str = "nvidia/Cosmos-Reason2-8B"
+    vllm_model: str = "cosmos-reason-2"
     confidence_threshold: float = 0.70
     vllm_timeout_seconds: float = 30.0
     host: str = "0.0.0.0"

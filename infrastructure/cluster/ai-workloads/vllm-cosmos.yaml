@@ -29,38 +29,42 @@ spec:
           effect: NoSchedule
       containers:
         - name: vllm
-          image: vllm/vllm-openai:latest
+          image: vllm/vllm-openai:v0.11.0
+          imagePullPolicy: IfNotPresent
           args:
             - --model
             - nvidia/Cosmos-Reason2-8B
+            - --served-model-name
+            - cosmos-reason-2
+            - --trust-remote-code
             - --reasoning-parser
             - qwen3
+            - --max-model-len
+            - "8192"
             - --gpu-memory-utilization
             - "0.9"
-            - --max-model-len
-            - "16384"
+            - --dtype
+            - bfloat16
+            - --limit-mm-per-prompt
+            - '{"image":1}'
           env:
+            - name: HOME
+              value: /cache/home
+            - name: XDG_CACHE_HOME
+              value: /cache/xdg
+            - name: HF_HOME
+              value: /cache/hf
             - name: HUGGING_FACE_HUB_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: hf-token
                   key: token
                   optional: true
-            - name: HF_HOME
-              value: /tmp/hf-cache
-            - name: HOME
-              value: /tmp/home
           volumeMounts:
             - name: cache
-              mountPath: /tmp/hf-cache
-            - name: cache
-              mountPath: /tmp/home
-            - name: cache
-              mountPath: /.cache
-            - name: cache
-              mountPath: /.triton
-            - name: cache
-              mountPath: /.config
+              mountPath: /cache
+            - name: shm
+              mountPath: /dev/shm
           ports:
             - name: http
               containerPort: 8000
@@ -78,20 +82,26 @@ spec:
             httpGet:
               path: /health
               port: http
-            initialDelaySeconds: 120
+            initialDelaySeconds: 180
             periodSeconds: 15
-            failureThreshold: 20
+            timeoutSeconds: 5
+            failureThreshold: 40
           livenessProbe:
             httpGet:
               path: /health
               port: http
-            initialDelaySeconds: 300
+            initialDelaySeconds: 600
             periodSeconds: 30
-            failureThreshold: 10
+            timeoutSeconds: 10
+            failureThreshold: 6
       volumes:
         - name: cache
           emptyDir:
             sizeLimit: 50Gi
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 4Gi
 ---
 apiVersion: v1
 kind: Service

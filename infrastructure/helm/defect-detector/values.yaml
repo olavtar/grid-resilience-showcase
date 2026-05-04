@@ -33,6 +33,6 @@ database:
   user: gridops
 
 vllmBaseUrl: http://vllm-cosmos.grid-ops-ai.svc.cluster.local:8000
-vllmModel: nvidia/Cosmos-Reason2-8B
+vllmModel: cosmos-reason-2
 
 env: {}
