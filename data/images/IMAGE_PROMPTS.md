@@ -33,7 +33,7 @@ These prompts generate realistic fixed-camera perspectives for the Grid Resilien
 **Camera:** CAM-P052 (span monitor, looking along conductor)
 **Expected finding:** `vegetation_encroachment`, major
 
-> A fixed camera view looking along power line conductors from one pole to the next, spanning approximately 120 meters. Tree canopy from a large deciduous tree (bare branches, winter) is encroaching within approximately 1.5 meters of the upper conductor on the right side of the frame. The branches are close enough to be a clear hazard. Overcast sky, wet conditions. Rural North Carolina distribution line corridor. The vegetation encroachment is obvious — branches nearly touching the conductor. Utility span monitoring camera perspective.
+> Fixed security camera view looking along a power line span between two wooden utility poles approximately 100 meters apart. A large deciduous tree on the right side of the frame has multiple thick branches extending directly over and through the power lines, with one branch clearly resting on top of the upper conductor and another branch crossing between the middle and lower conductors. Smaller branches and twigs are tangled in the lines. The tree canopy completely overhangs the right-of-way from the right side. Dead leaves still clinging to some branches. Overcast winter sky, wet conditions after rain. The view is from a pole-mounted monitoring camera at crossarm height looking along the span. Rural North Carolina distribution corridor with grass and dirt access road below the lines. Photorealistic utility infrastructure monitoring camera perspective with slight wide-angle distortion.
 
 ## Image 5: `cam_p052_veg2.jpg`
 **Camera:** CAM-P052 (same camera, adjacent span)
