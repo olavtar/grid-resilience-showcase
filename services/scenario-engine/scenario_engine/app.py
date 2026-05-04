@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
+import httpx
 import structlog
 import yaml
 from confluent_kafka import Producer
@@ -32,21 +33,29 @@ logger = structlog.get_logger()
 settings = ScenarioEngineSettings()
 state = ScenarioState()
 producer: Producer | None = None
+http_client: httpx.AsyncClient | None = None
 
 
 def _producer() -> Producer:
-    """Return the producer, asserting it has been initialized."""
     assert producer is not None
     return producer
 
 
+def _client() -> httpx.AsyncClient:
+    assert http_client is not None
+    return http_client
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    global producer
+    global producer, http_client
     setup_logging(level=settings.log_level, log_format=settings.log_format)
     producer = create_producer(settings)
+    http_client = httpx.AsyncClient(timeout=300.0)
     logger.info("scenario_engine_started", scenario_dir=settings.scenario_dir)
     yield
+    if http_client:
+        await http_client.aclose()
     if producer:
         producer.flush()
     logger.info("scenario_engine_stopped")
@@ -197,7 +206,19 @@ async def start_scenario(scenario_id: str = "ice_storm_piedmont") -> ActionRespo
 
     trace_id = str(uuid.uuid4()).replace("-", "")
     beat = state.advance()
-    count = emit_forecast_events(_producer(), config, trace_id)
+
+    try:
+        resp = await _client().post(f"{settings.weather_service_url}/forecast/run")
+        if resp.status_code == 200:
+            logger.info("weather_service_forecast_triggered")
+            count = 1
+        else:
+            logger.warning("weather_service_failed", status=resp.status_code)
+            count = emit_forecast_events(_producer(), config, trace_id)
+    except Exception:
+        logger.warning("weather_service_unreachable_using_fallback")
+        count = emit_forecast_events(_producer(), config, trace_id)
+
     state.events_emitted += count
 
     logger.info("scenario_started", scenario_id=scenario_id, beat=beat.value)
