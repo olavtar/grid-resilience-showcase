@@ -33,9 +33,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     setup_logging(level=settings.log_level, log_format=settings.log_format)
     producer = create_producer(settings)
 
+    def _safe_consumer() -> None:
+        try:
+            consumer_loop(settings, producer, findings_buffer, lock)
+        except Exception:
+            logger.exception("consumer_thread_crashed")
+
     thread = threading.Thread(
-        target=consumer_loop,
-        args=(settings, producer, findings_buffer, lock),
+        target=_safe_consumer,
         daemon=True,
     )
     thread.start()
