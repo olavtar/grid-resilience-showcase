@@ -234,7 +234,7 @@ export function GridMap({ assets, segments, cameras, riskScores, faults, dispatc
     (map.getSource(SOURCE_IDS.weather) as maplibregl.GeoJSONSource)?.setData(
       hasWeather ? fc([WEATHER_POLYGON]) : EMPTY_FC,
     );
-  }, [assets, segments, cameras, riskScores, faults, dispatches, mapReady]);
+  }, [assets, segments, cameras, riskScores, faults, dispatches, mapReady, scenarioActive]);
 
   return <div ref={containerRef} className="grid-map" />;
 }
