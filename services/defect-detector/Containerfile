@@ -9,6 +9,7 @@ RUN pip install --no-cache-dir /tmp/common/ && rm -rf /tmp/common/
 USER 1001
 COPY services/defect-detector/defect_detector/ defect_detector/
 COPY services/defect-detector/pyproject.toml .
+COPY data/images/ data/images/
 
 RUN pip install --no-cache-dir .
 
