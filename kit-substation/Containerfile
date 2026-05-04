@@ -3,7 +3,7 @@
 FROM nvcr.io/nvidia/isaac-sim:6.0.0-dev2
 
 # Copy purchased USD scene (never committed to git — baked into private image only)
-COPY assets/purchased/substation/ /opt/nvidia/isaac-sim/scene/
+COPY --chmod=755 assets/purchased/substation/ /opt/nvidia/isaac-sim/scene/
 
 # Copy the data-driven Kit extension
 COPY kit-substation/extension/grid.resilience.data/ /opt/nvidia/isaac-sim/exts/grid.resilience.data/
