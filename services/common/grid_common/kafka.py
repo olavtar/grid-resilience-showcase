@@ -44,7 +44,7 @@ def create_consumer(
     settings: KafkaSettings,
     group_id: str | None = None,
     topics: list[str] | None = None,
-    auto_offset_reset: str = "latest",
+    auto_offset_reset: str = "earliest",
 ) -> Consumer:
     """Create a confluent-kafka Consumer subscribed to topics."""
     config = _build_config(settings)
