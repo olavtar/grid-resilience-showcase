@@ -4,10 +4,39 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <title>Grid Resilience Ops Center</title>
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Patch RTCPeerConnection with TURN relay BEFORE ES modules load —
+      // the NVIDIA streaming library captures a reference at import time.
+      (function() {
+        var turnServer = {
+          urls: "turns:turn-grid-ops-ai.apps.v6f8n9h1d3j6g2g.51ty.p1.openshiftapps.com:443?transport=tcp",
+          username: "streaming",
+          credential: "JoBGIMNIGZxGYCgq8+zoKQ=="
+        };
+
+        var NativeRTC = window.RTCPeerConnection;
+        var Patched = function(config) {
+          var p = Object.assign({}, config || {});
+          p.iceServers = (p.iceServers || []).concat(turnServer);
+          p.iceTransportPolicy = "relay";
+          return new NativeRTC(p);
+        };
+        Patched.prototype = NativeRTC.prototype;
+        Object.setPrototypeOf(Patched, NativeRTC);
+
+        try {
+          Object.defineProperty(window, "RTCPeerConnection", {
+            value: Patched, writable: true, configurable: true,
+          });
+        } catch(e) {
+          window.RTCPeerConnection = Patched;
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
