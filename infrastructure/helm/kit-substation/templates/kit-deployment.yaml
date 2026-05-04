@@ -45,8 +45,8 @@ spec:
               set -e
               /isaac-sim/runheadless.sh \
                 --/app/livestream/webrtcEnabled=true \
-                --/app/livestream/streamViewOnly=true \
-                /opt/nvidia/isaac-sim/scene/substation.usd
+                --/app/window/hideUi=true \
+                --exec /opt/nvidia/isaac-sim/scripts/open_scene.py
           env:
             - name: ACCEPT_EULA
               value: "Y"

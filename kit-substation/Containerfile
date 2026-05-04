@@ -8,6 +8,9 @@ COPY assets/purchased/substation/ /opt/nvidia/isaac-sim/scene/
 # Copy the data-driven Kit extension
 COPY kit-substation/extension/grid.resilience.data/ /opt/nvidia/isaac-sim/exts/grid.resilience.data/
 
+# Copy startup script
+COPY kit-substation/scripts/open_scene.py /opt/nvidia/isaac-sim/scripts/open_scene.py
+
 # Install Kafka client for the extension
 RUN /isaac-sim/python.sh -m pip install "confluent-kafka>=2.6.0,<3.0"
 
