@@ -4,14 +4,20 @@
 
 from __future__ import annotations
 
+import io
 import math
+import tarfile
 import uuid
+from datetime import UTC, datetime
+from pathlib import Path
 
 import httpx
+import numpy as np
 import structlog
 from confluent_kafka import Producer
 
 from grid_common.events import (
+    GridCell,
     OpsEvent,
     Severity,
     WeatherAlert,
@@ -27,6 +33,90 @@ WIND_ALERT_THRESHOLD_MPS = 20.0
 FREEZING_RAIN_PRECIP_THRESHOLD_MM = 5.0
 ICE_ACCUMULATION_ALERT_MM = 10.0
 
+CORRDIFF_OUTPUT_VARS = ["u10m", "v10m", "t2m", "tp", "csnow", "cicep", "cfrzr", "crain"]
+
+CONUS_LAT_START = 21.138
+CONUS_LAT_END = 52.615
+CONUS_LON_START = -134.09
+CONUS_LON_END = -60.919
+CONUS_NLAT = 1059
+CONUS_NLON = 1799
+
+
+def _pixel_to_latlon(row: int, col: int) -> tuple[float, float]:
+    """Convert CorrDiff output pixel to lat/lon."""
+    lat = CONUS_LAT_START + (CONUS_LAT_END - CONUS_LAT_START) * row / (CONUS_NLAT - 1)
+    lon = CONUS_LON_START + (CONUS_LON_END - CONUS_LON_START) * col / (CONUS_NLON - 1)
+    return lat, lon
+
+
+def _extract_piedmont_cells(
+    output_array: np.ndarray, settings: WeatherServiceSettings
+) -> list[GridCell]:
+    """Extract grid cells within the Piedmont NC corridor from CorrDiff output."""
+    row_start = int(
+        (settings.corridor_lat_min - CONUS_LAT_START)
+        / (CONUS_LAT_END - CONUS_LAT_START)
+        * (CONUS_NLAT - 1)
+    )
+    row_end = int(
+        (settings.corridor_lat_max - CONUS_LAT_START)
+        / (CONUS_LAT_END - CONUS_LAT_START)
+        * (CONUS_NLAT - 1)
+    )
+    col_start = int(
+        (settings.corridor_lon_min - CONUS_LON_START)
+        / (CONUS_LON_END - CONUS_LON_START)
+        * (CONUS_NLON - 1)
+    )
+    col_end = int(
+        (settings.corridor_lon_max - CONUS_LON_START)
+        / (CONUS_LON_END - CONUS_LON_START)
+        * (CONUS_NLON - 1)
+    )
+
+    row_start = max(0, row_start)
+    row_end = min(CONUS_NLAT - 1, row_end)
+    col_start = max(0, col_start)
+    col_end = min(CONUS_NLON - 1, col_end)
+
+    step = max(1, (row_end - row_start) // 4)
+
+    cells = []
+    for r in range(row_start, row_end + 1, step):
+        for c in range(col_start, col_end + 1, step):
+            lat, lon = _pixel_to_latlon(r, c)
+            u10m = float(output_array[0, r, c])
+            v10m = float(output_array[1, r, c])
+            t2m = float(output_array[2, r, c])
+            tp = float(max(0.0, output_array[3, r, c]))
+            csnow = bool(output_array[4, r, c] > 0.5)
+            cicep = bool(output_array[5, r, c] > 0.5)
+            cfrzr = bool(output_array[6, r, c] > 0.5)
+            crain = bool(output_array[7, r, c] > 0.5)
+            cells.append(
+                GridCell(
+                    lat=round(lat, 4),
+                    lon=round(lon, 4),
+                    t2m_k=t2m,
+                    u10m_mps=u10m,
+                    v10m_mps=v10m,
+                    tp_mm=tp,
+                    csnow=csnow,
+                    cicep=cicep,
+                    cfrzr=cfrzr,
+                    crain=crain,
+                )
+            )
+
+    logger.info(
+        "piedmont_cells_extracted",
+        count=len(cells),
+        rows=f"{row_start}-{row_end}",
+        cols=f"{col_start}-{col_end}",
+    )
+    return cells
+
 
 async def run_forecast(
     settings: WeatherServiceSettings,
@@ -36,44 +126,80 @@ async def run_forecast(
     """Run CorrDiff NIM inference and publish forecasts to Kafka."""
     trace_id = uuid.uuid4().hex
 
-    # TODO: implement full CorrDiff NIM API call chain
-    # 1. Load pre-staged GFS data from settings.gfs_data_dir
-    # 2. Submit to CorrDiff NIM at settings.corrdiff_nim_url
-    # 3. Extract grid cells within corridor bounding box
-    # For now, this is the integration point — the structure is ready
-    # for the NIM client code once we validate the API contract.
+    input_path = Path(settings.gfs_data_dir) / "corrdiff_inputs.npy"
+    if not input_path.exists():
+        logger.error("gfs_input_not_found", path=str(input_path))
+        raise FileNotFoundError(f"Pre-staged GFS data not found: {input_path}")
 
-    response = await client.get(f"{settings.corrdiff_nim_url}/v1/health/ready")
+    logger.info("calling_corrdiff_nim", url=settings.corrdiff_nim_url, input=str(input_path))
+
+    with open(input_path, "rb") as f:
+        response = await client.post(
+            f"{settings.corrdiff_nim_url}/v1/infer",
+            data={"samples": "1", "steps": "8", "seed": "42"},
+            files={"input_array": ("input_array", f)},
+            headers={"accept": "application/x-tar"},
+            timeout=180.0,
+        )
+
     if response.status_code != 200:
-        logger.error("corrdiff_nim_not_ready", status=response.status_code)
-        raise RuntimeError("CorrDiff NIM not ready")
+        logger.error(
+            "corrdiff_inference_failed", status=response.status_code, body=response.text[:200]
+        )
+        raise RuntimeError(f"CorrDiff inference failed: {response.status_code}")
 
-    logger.info("corrdiff_nim_ready", url=settings.corrdiff_nim_url)
+    logger.info("corrdiff_inference_complete", size=len(response.content))
 
-    # Placeholder: construct forecast from NIM response
-    # This will be replaced with actual NIM output parsing
-    forecasts: list[WeatherForecast] = []
+    tar_bytes = io.BytesIO(response.content)
+    with tarfile.open(fileobj=tar_bytes, mode="r") as tar:
+        members = tar.getnames()
+        logger.info("corrdiff_output_members", members=members)
 
-    # Publish forecasts and evaluate alerts
-    for forecast in forecasts:
-        publish_event(producer, "grid.weather.forecast", forecast)
-        alerts = _evaluate_alerts(forecast, trace_id)
+        npy_name = next((m for m in members if m.endswith(".npy")), None)
+        if npy_name is None:
+            raise RuntimeError("No .npy file in CorrDiff output tar")
+
+        npy_file = tar.extractfile(npy_name)
+        if npy_file is None:
+            raise RuntimeError(f"Could not extract {npy_name}")
+        output_array = np.load(io.BytesIO(npy_file.read()))
+
+    logger.info("corrdiff_output_shape", shape=output_array.shape)
+
+    grid_cells = _extract_piedmont_cells(output_array, settings)
+
+    now = datetime.now(tz=UTC)
+    forecast = WeatherForecast(
+        forecast_hour=0,
+        valid_time=now,
+        grid_cells=grid_cells,
+        resolution_km=3.0,
+        model="corrdiff",
+        trace_id=trace_id,
+        source_service="weather-service",
+    )
+
+    forecasts = [forecast]
+
+    for fc in forecasts:
+        publish_event(producer, "grid.weather.forecast", fc)
+        alerts = _evaluate_alerts(fc, trace_id)
         for alert in alerts:
             publish_event(producer, "grid.weather.alerts", alert)
 
-    if forecasts:
-        ops = OpsEvent(
-            category="weather",
-            title="Earth-2 forecast published",
-            detail=f"CorrDiff 3km forecast: {len(forecasts)} timesteps, "
-            f"{sum(len(f.grid_cells) for f in forecasts)} grid cells.",
-            severity=Severity.INFO,
-            trace_id=trace_id,
-            source_service="weather-service",
-        )
-        publish_event(producer, "grid.ops.events", ops)
-
+    ops = OpsEvent(
+        category="weather",
+        title="Earth-2 CorrDiff forecast published",
+        detail=f"Live 3km downscaled forecast: {len(grid_cells)} grid cells "
+        f"over Piedmont NC corridor.",
+        severity=Severity.INFO,
+        trace_id=trace_id,
+        source_service="weather-service",
+    )
+    publish_event(producer, "grid.ops.events", ops)
     producer.flush()
+
+    logger.info("forecast_published", cells=len(grid_cells))
     return forecasts
 
 
@@ -99,10 +225,13 @@ def _evaluate_alerts(
 
     lats = [c.lat for c in forecast.grid_cells]
     lons = [c.lon for c in forecast.grid_cells]
-    lat_min = min(lats) if lats else 0.0
-    lat_max = max(lats) if lats else 0.0
-    lon_min = min(lons) if lons else 0.0
-    lon_max = max(lons) if lons else 0.0
+    if not lats:
+        return alerts
+
+    lat_min = min(lats)
+    lat_max = max(lats)
+    lon_min = min(lons)
+    lon_max = max(lons)
 
     max_wind = 0.0
     has_freezing_rain = False
@@ -122,15 +251,14 @@ def _evaluate_alerts(
             WeatherAlert(
                 alert_type="high_wind",
                 severity=Severity.WARNING,
-                message=f"Wind speeds up to {max_wind:.1f} m/s forecast "
-                f"at hour {forecast.forecast_hour}.",
+                message=f"Wind speeds up to {max_wind:.1f} m/s forecast.",
+                forecast_hour=forecast.forecast_hour,
+                trace_id=trace_id,
+                source_service="weather-service",
                 affected_area_lat_min=lat_min,
                 affected_area_lat_max=lat_max,
                 affected_area_lon_min=lon_min,
                 affected_area_lon_max=lon_max,
-                forecast_hour=forecast.forecast_hour,
-                trace_id=trace_id,
-                source_service="weather-service",
             )
         )
 
@@ -143,14 +271,14 @@ def _evaluate_alerts(
             WeatherAlert(
                 alert_type="freezing_rain",
                 severity=Severity.WARNING,
-                message=f"Freezing rain expected at hour {forecast.forecast_hour}.",
+                message="Freezing rain detected in forecast.",
+                forecast_hour=forecast.forecast_hour,
+                trace_id=trace_id,
+                source_service="weather-service",
                 affected_area_lat_min=lat_min,
                 affected_area_lat_max=lat_max,
                 affected_area_lon_min=lon_min,
                 affected_area_lon_max=lon_max,
-                forecast_hour=forecast.forecast_hour,
-                trace_id=trace_id,
-                source_service="weather-service",
             )
         )
 
@@ -159,15 +287,14 @@ def _evaluate_alerts(
             WeatherAlert(
                 alert_type="ice_accumulation",
                 severity=Severity.CRITICAL,
-                message=f"Ice accumulation up to {max_ice_mm:.1f}mm forecast "
-                f"at hour {forecast.forecast_hour}.",
+                message=f"Ice accumulation up to {max_ice_mm:.1f}mm forecast.",
+                forecast_hour=forecast.forecast_hour,
+                trace_id=trace_id,
+                source_service="weather-service",
                 affected_area_lat_min=lat_min,
                 affected_area_lat_max=lat_max,
                 affected_area_lon_min=lon_min,
                 affected_area_lon_max=lon_max,
-                forecast_hour=forecast.forecast_hour,
-                trace_id=trace_id,
-                source_service="weather-service",
             )
         )
 

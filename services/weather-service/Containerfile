@@ -9,6 +9,7 @@ RUN pip install --no-cache-dir /tmp/common/ && rm -rf /tmp/common/
 USER 1001
 COPY services/weather-service/weather_service/ weather_service/
 COPY services/weather-service/pyproject.toml .
+COPY data/gfs/ data/gfs/
 
 RUN pip install --no-cache-dir .
 
