@@ -46,6 +46,7 @@ def consumer_loop(
         settings,
         group_id="risk-engine",
         topics=["grid.weather.forecast"],
+        auto_offset_reset="earliest",
     )
 
     assets = _load_assets(settings.dsn)
