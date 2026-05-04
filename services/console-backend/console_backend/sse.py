@@ -98,8 +98,13 @@ class EventMultiplexer:
                     continue
                 try:
                     data = json.loads(raw.decode())
+                    topic = msg.topic()
+                    if topic == "grid.weather.forecast":
+                        from console_backend.weather_overlay import update_overlay
+
+                        update_overlay(data)
                     event = {
-                        "topic": msg.topic(),
+                        "topic": topic,
                         "data": data,
                     }
                     self._broadcast(event)

@@ -94,6 +94,27 @@ async def weather_current() -> Any:
     return await proxy_get(_client(), f"{settings.weather_service_url}/forecast/current")
 
 
+@app.get("/api/weather/overlay.png")
+async def weather_overlay() -> Any:
+    from starlette.responses import Response
+
+    from console_backend.weather_overlay import get_overlay
+
+    png_bytes, bounds = get_overlay()
+    if png_bytes is None:
+        raise HTTPException(status_code=404, detail="No forecast overlay available")
+    return Response(
+        content=png_bytes,
+        media_type="image/png",
+        headers={
+            "X-Overlay-Bounds": f"{bounds[0]},{bounds[1]},{bounds[2]},{bounds[3]}"
+            if bounds
+            else "",
+            "Cache-Control": "no-cache",
+        },
+    )
+
+
 # ---------------------------------------------------------------------------
 # Asset / Risk proxy
 # ---------------------------------------------------------------------------

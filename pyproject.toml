@@ -91,6 +91,7 @@ module = [
     "confluent_kafka.*",
     "opentelemetry.*",
     "yaml.*",
+    "scipy.*",
     "sse_starlette.*",
     "nemoguardrails.*",
 ]

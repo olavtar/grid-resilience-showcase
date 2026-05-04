@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { Feature, FeatureCollection, Point, LineString, Polygon } from "geojson";
+import type { Feature, FeatureCollection, Point, LineString } from "geojson";
 import type { TopologyData, AssetRiskScore, FaultEvent, DispatchAssignment } from "../types/events";
 
 interface GridMapProps {
@@ -44,20 +44,7 @@ const SOURCE_IDS = {
   weather: "grid-weather",
 } as const;
 
-const WEATHER_POLYGON: Feature<Polygon> = {
-  type: "Feature",
-  geometry: {
-    type: "Polygon",
-    coordinates: [[
-      [-79.52, 36.08],
-      [-79.40, 36.08],
-      [-79.40, 36.12],
-      [-79.52, 36.12],
-      [-79.52, 36.08],
-    ]],
-  },
-  properties: {},
-};
+
 
 export function GridMap({ assets, segments, cameras, riskScores, faults, dispatches, scenarioActive }: GridMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -76,16 +63,7 @@ export function GridMap({ assets, segments, cameras, riskScores, faults, dispatc
     });
 
     map.on("load", () => {
-      map.addSource(SOURCE_IDS.weather, { type: "geojson", data: EMPTY_FC });
-      map.addLayer({
-        id: "weather-layer",
-        type: "fill",
-        source: SOURCE_IDS.weather,
-        paint: {
-          "fill-color": "#0066CC",
-          "fill-opacity": 0.15,
-        },
-      });
+      // Weather overlay added dynamically when forecast data arrives
 
       map.addSource(SOURCE_IDS.segments, { type: "geojson", data: EMPTY_FC });
       map.addLayer({
@@ -248,10 +226,30 @@ export function GridMap({ assets, segments, cameras, riskScores, faults, dispatc
       }));
     (map.getSource(SOURCE_IDS.routes) as maplibregl.GeoJSONSource)?.setData(fc(routeFeatures));
 
-    const hasWeather = scenarioActive;
-    (map.getSource(SOURCE_IDS.weather) as maplibregl.GeoJSONSource)?.setData(
-      hasWeather ? fc([WEATHER_POLYGON]) : EMPTY_FC,
-    );
+    if (scenarioActive) {
+      const overlayUrl = "/api/weather/overlay.png?t=" + Date.now();
+      fetch(overlayUrl).then(resp => {
+        if (!resp.ok) return;
+        const bounds = resp.headers.get("X-Overlay-Bounds");
+        if (!bounds) return;
+        const [latMin, latMax, lonMin, lonMax] = bounds.split(",").map(Number);
+        const coords: [[number, number], [number, number], [number, number], [number, number]] = [
+          [lonMin, latMax],
+          [lonMax, latMax],
+          [lonMax, latMin],
+          [lonMin, latMin],
+        ];
+        if (map.getSource("weather-raster")) {
+          (map.getSource("weather-raster") as maplibregl.ImageSource).updateImage({ url: overlayUrl, coordinates: coords });
+        } else {
+          map.addSource("weather-raster", { type: "image", url: overlayUrl, coordinates: coords });
+          map.addLayer({ id: "weather-raster-layer", type: "raster", source: "weather-raster", paint: { "raster-opacity": 0.7 } }, "segments-layer");
+        }
+      }).catch(() => {});
+    } else if (map.getLayer("weather-raster-layer")) {
+      map.removeLayer("weather-raster-layer");
+      map.removeSource("weather-raster");
+    }
   }, [assets, segments, cameras, riskScores, faults, dispatches, mapReady, scenarioActive]);
 
   return <div ref={containerRef} className="grid-map" />;
