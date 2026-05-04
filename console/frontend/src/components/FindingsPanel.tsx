@@ -42,13 +42,13 @@ export function FindingsPanel({ findings, onSelectAsset }: FindingsPanelProps) {
     const latest = new Map<string, DeduplicatedFinding>();
     for (const f of findings) {
       for (const d of f.findings) {
-        const key = `${f.camera_id}:${d.defect_type}`;
-        if (!latest.has(key)) {
+        const key = f.camera_id;
+        if (!latest.has(key) || (f.image_data && !latest.get(key)!.image_data)) {
           latest.set(key, {
             camera_id: f.camera_id,
             asset_id: f.asset_id,
             defect: d,
-            image_data: f.image_data ?? null,
+            image_data: f.image_data ?? latest.get(key)?.image_data ?? null,
             timestamp: f.timestamp,
           });
         }

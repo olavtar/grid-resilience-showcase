@@ -28,16 +28,20 @@ function formatTime(iso: string): string {
 
 export function EventStream({ events }: EventStreamProps) {
   const grouped = useMemo(() => {
-    const result: GroupedEvent[] = [];
+    const seen = new Map<string, GroupedEvent>();
+    const order: string[] = [];
     for (const e of events) {
-      const prev = result[result.length - 1];
-      if (prev && prev.event.title === e.title && prev.event.category === e.category) {
-        prev.count++;
+      const key = `${e.category}:${e.title}`;
+      const existing = seen.get(key);
+      if (existing) {
+        existing.count++;
       } else {
-        result.push({ event: e, count: 1 });
+        const g = { event: e, count: 1 };
+        seen.set(key, g);
+        order.push(key);
       }
     }
-    return result;
+    return order.map((k) => seen.get(k)!);
   }, [events]);
 
   return (
