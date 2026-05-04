@@ -16,7 +16,7 @@ interface OperationsViewProps {
   stream: ReturnType<typeof useEventStream>;
 }
 
-const KIT_SIGNALING_URL = "wss://kit-substation-grid-ops-ai.apps.v6f8n9h1d3j6g2g.51ty.p1.openshiftapps.com";
+const KIT_SIGNALING_URL = "kit-substation-grid-ops-ai.apps.v6f8n9h1d3j6g2g.51ty.p1.openshiftapps.com";
 
 const EMPTY_TOPOLOGY: TopologyData = { feeders: [], assets: [], segments: [], cameras: [] };
 
