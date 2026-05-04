@@ -77,7 +77,11 @@ async def readyz() -> dict[str, str]:
 @app.get("/api/events")
 async def events(request: Request) -> EventSourceResponse:
     """SSE stream of all grid.* Kafka events."""
-    return EventSourceResponse(event_stream(_mux()))
+    return EventSourceResponse(
+        event_stream(_mux()),
+        ping=15,
+        headers={"X-Accel-Buffering": "no"},
+    )
 
 
 # ---------------------------------------------------------------------------
