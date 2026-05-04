@@ -110,6 +110,7 @@ class EventMultiplexer:
 async def event_stream(mux: EventMultiplexer) -> AsyncGenerator[dict[str, str], None]:
     """Async generator yielding SSE events from the multiplexer."""
     q = mux.subscribe()
+    yield {"event": "connected", "data": "{}"}
     try:
         while True:
             event = await q.get()
