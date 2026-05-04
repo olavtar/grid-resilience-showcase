@@ -10,6 +10,7 @@ const VIEWS = [
   { id: "operations", label: "Map" },
   { id: "dispatch", label: "Dispatch" },
   { id: "platform", label: "Platform" },
+  { id: "mobile", label: "Mobile" },
 ];
 
 export function Masthead({ activeView, onViewChange, connected }: MastheadProps) {

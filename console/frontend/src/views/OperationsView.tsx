@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { GridMap } from "../components/GridMap";
+import { SubstationPanel } from "../components/SubstationPanel";
 import { RiskTable } from "../components/RiskTable";
 import { FindingsPanel } from "../components/FindingsPanel";
 import { EventStream } from "../components/EventStream";
@@ -13,6 +14,8 @@ const API_BASE = import.meta.env.VITE_API_BASE ?? "";
 interface OperationsViewProps {
   stream: ReturnType<typeof useEventStream>;
 }
+
+const KIT_SIGNALING_URL = "wss://kit-substation-grid-ops-ai.apps.v6f8n9h1d3j6g2g.51ty.p1.openshiftapps.com";
 
 const EMPTY_TOPOLOGY: TopologyData = { feeders: [], assets: [], segments: [], cameras: [] };
 
@@ -47,6 +50,7 @@ export function OperationsView({ stream }: OperationsViewProps) {
         />
       </div>
       <div className="grid-layout__right">
+        <SubstationPanel signalingServer={KIT_SIGNALING_URL} />
         <RiskTable riskScores={stream.riskScores} />
         <FindingsPanel findings={stream.findings} />
         <EventStream events={stream.events} />

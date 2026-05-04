@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { Feature, FeatureCollection, Point, LineString } from "geojson";
+import type { Feature, FeatureCollection, Point, LineString, Polygon } from "geojson";
 import type { TopologyData, AssetRiskScore, FaultEvent, DispatchAssignment } from "../types/events";
 
 interface GridMapProps {
@@ -40,7 +40,23 @@ const SOURCE_IDS = {
   cameras: "grid-cameras",
   faults: "grid-faults",
   routes: "grid-routes",
+  weather: "grid-weather",
 } as const;
+
+const WEATHER_POLYGON: Feature<Polygon> = {
+  type: "Feature",
+  geometry: {
+    type: "Polygon",
+    coordinates: [[
+      [-79.52, 36.08],
+      [-79.40, 36.08],
+      [-79.40, 36.12],
+      [-79.52, 36.12],
+      [-79.52, 36.08],
+    ]],
+  },
+  properties: {},
+};
 
 export function GridMap({ assets, segments, cameras, riskScores, faults, dispatches }: GridMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -59,6 +75,17 @@ export function GridMap({ assets, segments, cameras, riskScores, faults, dispatc
     });
 
     map.on("load", () => {
+      map.addSource(SOURCE_IDS.weather, { type: "geojson", data: EMPTY_FC });
+      map.addLayer({
+        id: "weather-layer",
+        type: "fill",
+        source: SOURCE_IDS.weather,
+        paint: {
+          "fill-color": "#0066CC",
+          "fill-opacity": 0.15,
+        },
+      });
+
       map.addSource(SOURCE_IDS.segments, { type: "geojson", data: EMPTY_FC });
       map.addLayer({
         id: "segments-layer",
@@ -201,6 +228,11 @@ export function GridMap({ assets, segments, cameras, riskScores, faults, dispatc
         properties: { crew_id: d.crew_id },
       }));
     (map.getSource(SOURCE_IDS.routes) as maplibregl.GeoJSONSource)?.setData(fc(routeFeatures));
+
+    const hasWeather = riskScores.size > 0 || faults.length > 0;
+    (map.getSource(SOURCE_IDS.weather) as maplibregl.GeoJSONSource)?.setData(
+      hasWeather ? fc([WEATHER_POLYGON]) : EMPTY_FC,
+    );
   }, [assets, segments, cameras, riskScores, faults, dispatches, mapReady]);
 
   return <div ref={containerRef} className="grid-map" />;

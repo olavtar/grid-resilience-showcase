@@ -7,11 +7,12 @@ import { CustomerImpactBanner } from "./components/CustomerImpactBanner";
 import { OperationsView } from "./views/OperationsView";
 import { DispatchView } from "./views/DispatchView";
 import { PlatformView } from "./views/PlatformView";
+import { MobileView } from "./views/MobileView";
 import { useEventStream } from "./hooks/useEventStream";
 import "@patternfly/react-core/dist/styles/base.css";
 import "./styles/grid-ops.css";
 
-type ViewId = "operations" | "dispatch" | "platform";
+type ViewId = "operations" | "dispatch" | "platform" | "mobile";
 
 export default function App() {
   const [activeView, setActiveView] = useState<ViewId>("operations");
@@ -25,6 +26,7 @@ export default function App() {
         {activeView === "operations" && <OperationsView stream={stream} />}
         {activeView === "dispatch" && <DispatchView stream={stream} />}
         {activeView === "platform" && <PlatformView />}
+        {activeView === "mobile" && <MobileView stream={stream} />}
       </div>
       <ScenarioControls onReset={stream.reset} />
     </div>
