@@ -8,6 +8,8 @@ interface ScenarioControlsProps {
   onReset?: () => void;
 }
 
+const BEATS = ["forecast", "triage", "escalate", "detect", "dispatch", "storm", "trace"];
+
 export function ScenarioControls({ onReset }: ScenarioControlsProps) {
   const [beat, setBeat] = useState("idle");
   const [solveTime] = useState<string | null>(null);
@@ -24,6 +26,8 @@ export function ScenarioControls({ onReset }: ScenarioControlsProps) {
       /* connection error handled by SSE reconnect */
     }
   }, [onReset]);
+
+  const beatIndex = BEATS.indexOf(beat);
 
   return (
     <div className="grid-controls">
@@ -42,10 +46,38 @@ export function ScenarioControls({ onReset }: ScenarioControlsProps) {
       <button className="grid-controls__button" onClick={() => post("reset")}>
         Reset
       </button>
-      <span className="grid-controls__status">
-        Beat: {beat}
-        {solveTime && ` | cuOpt: ${solveTime}`}
-      </span>
+      <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4 }}>
+        {BEATS.map((b, i) => {
+          const isActive = b === beat;
+          const isPast = beatIndex >= 0 && i < beatIndex;
+          return (
+            <div key={b} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <div
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: "50%",
+                  background: isActive ? "#3E8635" : isPast ? "rgba(62,134,53,0.5)" : "rgba(255,255,255,0.25)",
+                  border: isActive ? "2px solid #fff" : "none",
+                  transition: "all 0.2s ease",
+                }}
+                title={b}
+              />
+              {i < BEATS.length - 1 && (
+                <div style={{
+                  width: 12,
+                  height: 2,
+                  background: isPast ? "rgba(62,134,53,0.5)" : "rgba(255,255,255,0.15)",
+                }} />
+              )}
+            </div>
+          );
+        })}
+        <span style={{ marginLeft: 8, fontSize: 11, color: "rgba(255,255,255,0.6)", fontFamily: "monospace" }}>
+          {beat === "idle" ? "ready" : beat}
+          {solveTime && ` | cuOpt: ${solveTime}`}
+        </span>
+      </div>
     </div>
   );
 }

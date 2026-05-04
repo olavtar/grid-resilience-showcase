@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { GridMap } from "../components/GridMap";
+import { MapLegend } from "../components/MapLegend";
 import { SubstationPanel } from "../components/SubstationPanel";
 import { RiskTable } from "../components/RiskTable";
 import { FindingsPanel } from "../components/FindingsPanel";
@@ -39,7 +40,8 @@ export function OperationsView({ stream }: OperationsViewProps) {
 
   return (
     <div className="grid-layout">
-      <div className="grid-layout__left">
+      <div className="grid-layout__left" style={{ position: "relative" }}>
+        <MapLegend />
         <GridMap
           assets={topology.assets}
           segments={topology.segments}
