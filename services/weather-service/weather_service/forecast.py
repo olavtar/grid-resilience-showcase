@@ -39,8 +39,8 @@ CONUS_LAT_START = 21.138
 CONUS_LAT_END = 52.615
 CONUS_LON_START = -134.09
 CONUS_LON_END = -60.919
-CONUS_NLAT = 1059
-CONUS_NLON = 1799
+CONUS_NLAT = 1056
+CONUS_NLON = 1792
 
 
 def _pixel_to_latlon(row: int, col: int) -> tuple[float, float]:
@@ -53,59 +53,43 @@ def _pixel_to_latlon(row: int, col: int) -> tuple[float, float]:
 def _extract_piedmont_cells(
     output_array: np.ndarray, settings: WeatherServiceSettings
 ) -> list[GridCell]:
-    """Extract grid cells within the Piedmont NC corridor from CorrDiff output."""
-    row_start = int(
-        (settings.corridor_lat_min - CONUS_LAT_START)
-        / (CONUS_LAT_END - CONUS_LAT_START)
-        * (CONUS_NLAT - 1)
-    )
-    row_end = int(
-        (settings.corridor_lat_max - CONUS_LAT_START)
-        / (CONUS_LAT_END - CONUS_LAT_START)
-        * (CONUS_NLAT - 1)
-    )
-    col_start = int(
-        (settings.corridor_lon_min - CONUS_LON_START)
-        / (CONUS_LON_END - CONUS_LON_START)
-        * (CONUS_NLON - 1)
-    )
-    col_end = int(
-        (settings.corridor_lon_max - CONUS_LON_START)
-        / (CONUS_LON_END - CONUS_LON_START)
-        * (CONUS_NLON - 1)
-    )
+    """Extract grid cells within an expanded Piedmont NC region from CorrDiff output."""
+    padding = 0.5
+    lat_min = settings.corridor_lat_min - padding
+    lat_max = settings.corridor_lat_max + padding
+    lon_min = settings.corridor_lon_min - padding
+    lon_max = settings.corridor_lon_max + padding
 
-    row_start = max(0, row_start)
-    row_end = min(CONUS_NLAT - 1, row_end)
-    col_start = max(0, col_start)
-    col_end = min(CONUS_NLON - 1, col_end)
+    nlat = output_array.shape[-2]
+    nlon = output_array.shape[-1]
 
-    step = max(1, (row_end - row_start) // 4)
+    row_start = max(0, int((lat_min - CONUS_LAT_START) / (CONUS_LAT_END - CONUS_LAT_START) * (nlat - 1)))
+    row_end = min(nlat - 1, int((lat_max - CONUS_LAT_START) / (CONUS_LAT_END - CONUS_LAT_START) * (nlat - 1)))
+    col_start = max(0, int((lon_min - CONUS_LON_START) / (CONUS_LON_END - CONUS_LON_START) * (nlon - 1)))
+    col_end = min(nlon - 1, int((lon_max - CONUS_LON_START) / (CONUS_LON_END - CONUS_LON_START) * (nlon - 1)))
+
+    # Squeeze batch/sample dims: (1,1,8,H,W) → (8,H,W)
+    arr = output_array
+    while arr.ndim > 3:
+        arr = arr[0]
 
     cells = []
-    for r in range(row_start, row_end + 1, step):
-        for c in range(col_start, col_end + 1, step):
-            lat, lon = _pixel_to_latlon(r, c)
-            u10m = float(output_array[0, r, c])
-            v10m = float(output_array[1, r, c])
-            t2m = float(output_array[2, r, c])
-            tp = float(max(0.0, output_array[3, r, c]))
-            csnow = bool(output_array[4, r, c] > 0.5)
-            cicep = bool(output_array[5, r, c] > 0.5)
-            cfrzr = bool(output_array[6, r, c] > 0.5)
-            crain = bool(output_array[7, r, c] > 0.5)
+    for r in range(row_start, row_end + 1):
+        for c in range(col_start, col_end + 1):
+            lat = CONUS_LAT_START + (CONUS_LAT_END - CONUS_LAT_START) * r / (nlat - 1)
+            lon = CONUS_LON_START + (CONUS_LON_END - CONUS_LON_START) * c / (nlon - 1)
             cells.append(
                 GridCell(
                     lat=round(lat, 4),
                     lon=round(lon, 4),
-                    t2m_k=t2m,
-                    u10m_mps=u10m,
-                    v10m_mps=v10m,
-                    tp_mm=tp,
-                    csnow=csnow,
-                    cicep=cicep,
-                    cfrzr=cfrzr,
-                    crain=crain,
+                    t2m_k=float(arr[2, r, c]),
+                    u10m_mps=float(arr[0, r, c]),
+                    v10m_mps=float(arr[1, r, c]),
+                    tp_mm=float(max(0.0, arr[3, r, c])),
+                    csnow=bool(arr[4, r, c] > 0.5),
+                    cicep=bool(arr[5, r, c] > 0.5),
+                    cfrzr=bool(arr[6, r, c] > 0.5),
+                    crain=bool(arr[7, r, c] > 0.5),
                 )
             )
 
