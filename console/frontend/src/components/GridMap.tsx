@@ -1,6 +1,6 @@
 // This project was developed with assistance from AI tools.
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Feature, FeatureCollection, Point, LineString } from "geojson";
@@ -45,7 +45,7 @@ const SOURCE_IDS = {
 export function GridMap({ assets, segments, cameras, riskScores, faults, dispatches }: GridMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
-  const readyRef = useRef(false);
+  const [mapReady, setMapReady] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -58,8 +58,6 @@ export function GridMap({ assets, segments, cameras, riskScores, faults, dispatc
     });
 
     map.on("load", () => {
-      readyRef.current = true;
-
       map.addSource(SOURCE_IDS.segments, { type: "geojson", data: EMPTY_FC });
       map.addLayer({
         id: "segments-layer",
@@ -123,6 +121,8 @@ export function GridMap({ assets, segments, cameras, riskScores, faults, dispatc
           "circle-stroke-color": "#A30000",
         },
       });
+
+      setMapReady(true);
     });
 
     mapRef.current = map;
@@ -130,12 +130,12 @@ export function GridMap({ assets, segments, cameras, riskScores, faults, dispatc
     return () => {
       map.remove();
       mapRef.current = null;
-      readyRef.current = false;
+      setMapReady(false);
     };
   }, []);
 
   useEffect(() => {
-    if (!mapRef.current || !readyRef.current) return;
+    if (!mapRef.current || !mapReady) return;
     const map = mapRef.current;
 
     const assetLookup = new Map(assets.map((a) => [a.id, a]));
@@ -189,7 +189,7 @@ export function GridMap({ assets, segments, cameras, riskScores, faults, dispatc
         properties: { crew_id: d.crew_id },
       }));
     (map.getSource(SOURCE_IDS.routes) as maplibregl.GeoJSONSource)?.setData(fc(routeFeatures));
-  }, [assets, segments, cameras, riskScores, faults, dispatches]);
+  }, [assets, segments, cameras, riskScores, faults, dispatches, mapReady]);
 
   return <div ref={containerRef} className="grid-map" />;
 }
