@@ -15,17 +15,28 @@ import structlog
 
 from defect_detector.prompt import DETECTION_PROMPT
 from defect_detector.settings import DefectDetectorSettings
-from grid_common.events import DefectFinding
+from grid_common.events import DefectFinding, Severity
 
 logger = structlog.get_logger()
 
 DEFECT_TYPE_ALIASES: dict[str, str] = {
     "ice_accumulation_on_conductors": "ice_accumulation",
     "ice_accumulation_on_equipment": "ice_accumulation",
-    "ice_loading_on_conductors": "ice_loading",
+    "ice_accumulation_on_conductors_and_equipment": "ice_accumulation",
+    "ice_loading_on_conductors": "ice_accumulation",
+    "ice_loading": "ice_accumulation",
     "vegetation_encroachment_on_conductors": "vegetation_encroachment",
     "cracked_wooden_crossarm": "cracked_crossarm",
+    "cracked_broken_or_split_crossarm": "cracked_crossarm",
+    "cracked_broken_or_split_crossarms": "cracked_crossarm",
     "broken_crossarm": "cracked_crossarm",
+    "split_crossarm": "cracked_crossarm",
+}
+
+SEVERITY_OVERRIDES: dict[str, str] = {
+    "cracked_crossarm": "critical",
+    "ice_accumulation": "critical",
+    "vegetation_encroachment": "major",
 }
 
 
@@ -104,14 +115,16 @@ async def analyze_frame(
         if confidence < settings.confidence_threshold:
             continue
         defect_type = _normalize_defect_type(f.get("defect_type", "unknown"))
-        raw_severity = f.get("severity", "info")
-        severity = severity_map.get(raw_severity, raw_severity)
-        if severity not in valid_severities:
-            severity = "major"
+        severity = SEVERITY_OVERRIDES.get(defect_type)
+        if severity is None:
+            raw_severity = f.get("severity", "major")
+            severity = severity_map.get(raw_severity, raw_severity)
+            if severity not in valid_severities:
+                severity = "major"
         findings.append(
             DefectFinding(
                 defect_type=defect_type,
-                severity=severity,
+                severity=Severity(severity),
                 confidence=confidence,
                 description=f.get("description", ""),
                 recommended_action=f.get("recommended_action", f.get("action", "")),

@@ -43,7 +43,7 @@ class CameraState:
     baseline_interval: int = 3600
     escalated_interval: int = 30
     current_interval: int = 3600
-    last_published: float = 0.0
+    last_published: float = -1.0
     frame_sequence: int = 0
 
 
@@ -54,10 +54,8 @@ _shutdown_event = threading.Event()
 
 
 CAMERA_IMAGES: dict[str, list[str]] = {
-    "CAM-P037": ["cam_p037_baseline.jpg", "cam_p037_cracked.jpg"],
-    "CAM-P041": ["cam_p041_baseline.jpg"],
-    "CAM-P052": ["cam_p052_veg1.jpg", "cam_p052_veg2.jpg"],
-    "CAM-SUB-A": ["cam_sub_a_baseline.jpg"],
+    "CAM-P037": ["cam_p037_cracked.jpg"],
+    "CAM-P052": ["cam_p052_veg1.jpg"],
     "CAM-P063": ["cam_p063_ice.jpg"],
 }
 
@@ -88,6 +86,7 @@ def _load_cameras_from_db() -> dict[str, CameraState]:
                         baseline_interval=baseline or 3600,
                         escalated_interval=escalated or 30,
                         current_interval=baseline or 3600,
+                        last_published=time.time(),
                     )
         logger.info("cameras_loaded", count=len(states))
     except Exception:
@@ -100,6 +99,8 @@ async def _frame_publisher_loop() -> None:
     while True:
         now = time.time()
         for state in camera_states.values():
+            if state.camera_id not in CAMERA_IMAGES:
+                continue
             elapsed = now - state.last_published
             if elapsed >= state.current_interval:
                 state.frame_sequence += 1
