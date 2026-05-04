@@ -69,10 +69,11 @@ async def analyze_frame(
 
     try:
         data = response.json()
-        content = data["choices"][0]["message"]["content"]
+        message = data["choices"][0]["message"]
+        content = message.get("content") or message.get("reasoning") or ""
         parsed = json.loads(content)
         raw_findings = parsed.get("findings", [])
-    except (json.JSONDecodeError, KeyError, IndexError) as e:
+    except (json.JSONDecodeError, KeyError, IndexError, TypeError) as e:
         logger.warning("vllm_response_parse_error", error=str(e))
         return [], latency_ms
 
