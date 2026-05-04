@@ -68,12 +68,14 @@ class EventMultiplexer:
                     pass
 
     def _consume_loop(self) -> None:
+        import uuid
+
         consumer = Consumer(
             {
                 "bootstrap.servers": self._settings.kafka_bootstrap_servers,
-                "group.id": f"{self._settings.kafka_consumer_group_id}-sse",
+                "group.id": f"sse-{uuid.uuid4().hex[:8]}",
                 "auto.offset.reset": "latest",
-                "enable.auto.commit": True,
+                "enable.auto.commit": False,
             }
         )
         consumer.subscribe(ALL_TOPICS)
