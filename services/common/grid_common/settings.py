@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from urllib.parse import quote_plus
+
 from pydantic_settings import BaseSettings
 
 
@@ -33,7 +35,7 @@ class DatabaseSettings(BaseSettings):
     @property
     def dsn(self) -> str:
         return (
-            f"postgresql://{self.db_user}:{self.db_password}"
+            f"postgresql://{self.db_user}:{quote_plus(self.db_password)}"
             f"@{self.db_host}:{self.db_port}/{self.db_name}"
             f"?sslmode={self.db_sslmode}"
         )
