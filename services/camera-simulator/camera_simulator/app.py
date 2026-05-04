@@ -54,11 +54,11 @@ _shutdown_event = threading.Event()
 
 
 CAMERA_IMAGES: dict[str, list[str]] = {
-    "CAM-P037": ["cam_p037_baseline.png", "cam_p037_cracked.png"],
-    "CAM-P041": ["cam_p041_baseline.png"],
-    "CAM-P052": ["cam_p052_veg1.png", "cam_p052_veg2.png"],
-    "CAM-SUB-A": ["cam_sub_a_baseline.png"],
-    "CAM-P063": ["cam_p063_ice.png"],
+    "CAM-P037": ["cam_p037_baseline.jpg", "cam_p037_cracked.jpg"],
+    "CAM-P041": ["cam_p041_baseline.jpg"],
+    "CAM-P052": ["cam_p052_veg1.jpg", "cam_p052_veg2.jpg"],
+    "CAM-SUB-A": ["cam_sub_a_baseline.jpg"],
+    "CAM-P063": ["cam_p063_ice.jpg"],
 }
 
 
