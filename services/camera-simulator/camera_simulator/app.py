@@ -53,10 +53,25 @@ _consumer_thread: threading.Thread | None = None
 _shutdown_event = threading.Event()
 
 
+CAMERA_IMAGES: dict[str, list[str]] = {
+    "CAM-P037": ["cam_p037_baseline.jpg", "cam_p037_cracked.jpg"],
+    "CAM-P041": ["cam_p041_baseline.jpg"],
+    "CAM-P052": ["cam_p052_veg1.jpg", "cam_p052_veg2.jpg"],
+    "CAM-SUB-A": ["cam_sub_a_baseline.jpg"],
+    "CAM-P063": ["cam_p063_ice.jpg"],
+}
+
+
+def _image_for_camera(camera_id: str, sequence: int) -> str:
+    """Select an image file for a camera based on frame sequence."""
+    images = CAMERA_IMAGES.get(camera_id, ["placeholder.png"])
+    idx = min(sequence, len(images) - 1)
+    return str(Path(settings.image_dir) / "base" / images[idx])
+
+
 def _load_cameras_from_db() -> dict[str, CameraState]:
     """Load camera definitions from the cameras table."""
     states: dict[str, CameraState] = {}
-    image_path = str(Path(settings.image_dir) / "placeholder.png")
     try:
         with psycopg.connect(settings.dsn) as conn:
             with conn.cursor() as cur:
@@ -69,7 +84,7 @@ def _load_cameras_from_db() -> dict[str, CameraState]:
                     states[cam_id] = CameraState(
                         camera_id=cam_id,
                         asset_id=asset_id or "",
-                        image_path=image_path,
+                        image_path=_image_for_camera(cam_id, 0),
                         baseline_interval=baseline or 3600,
                         escalated_interval=escalated or 30,
                         current_interval=baseline or 3600,
@@ -92,7 +107,7 @@ async def _frame_publisher_loop() -> None:
                     _producer(),
                     camera_id=state.camera_id,
                     asset_id=state.asset_id,
-                    image_path=state.image_path,
+                    image_path=_image_for_camera(state.camera_id, state.frame_sequence),
                     frame_sequence=state.frame_sequence,
                     escalated=state.mode == "escalated",
                 )
