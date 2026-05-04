@@ -10,7 +10,7 @@ DETECTION_PROMPT = (
     "Examine the image and answer: are any of the following conditions present?\n"
     "- Cracked, broken, or split crossarms\n"
     "- Damaged or missing insulators\n"
-    "- Vegetation within 3 meters of conductors\n"
+    "- Vegetation encroachment: tree branches or canopy growing close to or touching power lines\n"
     "- Leaning or tilted poles\n"
     "- Missing hardware (bolts, clamps, guy wire attachments)\n"
     "- Visible corrosion on metal components\n"

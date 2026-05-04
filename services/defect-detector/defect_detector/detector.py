@@ -19,6 +19,19 @@ from grid_common.events import DefectFinding
 
 logger = structlog.get_logger()
 
+DEFECT_TYPE_ALIASES: dict[str, str] = {
+    "ice_accumulation_on_conductors": "ice_accumulation",
+    "ice_accumulation_on_equipment": "ice_accumulation",
+    "ice_loading_on_conductors": "ice_loading",
+    "vegetation_encroachment_on_conductors": "vegetation_encroachment",
+    "cracked_wooden_crossarm": "cracked_crossarm",
+    "broken_crossarm": "cracked_crossarm",
+}
+
+
+def _normalize_defect_type(raw: str) -> str:
+    return DEFECT_TYPE_ALIASES.get(raw, raw)
+
 
 async def analyze_frame(
     image_url: str,
@@ -87,9 +100,10 @@ async def analyze_frame(
         confidence = f.get("confidence", 0.0)
         if confidence < settings.confidence_threshold:
             continue
+        defect_type = _normalize_defect_type(f.get("defect_type", "unknown"))
         findings.append(
             DefectFinding(
-                defect_type=f.get("defect_type", "unknown"),
+                defect_type=defect_type,
                 severity=f.get("severity", "info"),
                 confidence=confidence,
                 description=f.get("description", ""),
