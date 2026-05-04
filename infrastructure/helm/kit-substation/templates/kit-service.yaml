@@ -10,10 +10,10 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - port: 8443
-      targetPort: signaling-tls
+    - port: 49100
+      targetPort: signaling
       protocol: TCP
-      name: signaling-tls
+      name: signaling
   selector:
     app.kubernetes.io/name: kit-substation
 ---

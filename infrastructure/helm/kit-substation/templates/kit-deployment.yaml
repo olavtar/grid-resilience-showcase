@@ -32,6 +32,8 @@ spec:
         - key: nvidia.com/gpu
           operator: Exists
           effect: NoSchedule
+      securityContext:
+        fsGroup: 1234
       containers:
         - name: kit-substation
           image: "{{ .Values.kitSubstation.image.repository }}:{{ .Values.kitSubstation.image.tag }}"
@@ -41,7 +43,7 @@ spec:
             - -c
             - |
               set -e
-              ./runheadless.sh \
+              /isaac-sim/runheadless.sh \
                 --/app/livestream/webrtcEnabled=true \
                 --/app/livestream/streamViewOnly=true
           env:
@@ -76,11 +78,14 @@ spec:
               nvidia.com/gpu: 1
           volumeMounts:
             - name: cache
-              mountPath: /opt/nvidia/omniverse/.cache/ov
+              mountPath: /isaac-sim/.cache/ov
               subPath: cache
             - name: cache
-              mountPath: /opt/nvidia/omniverse/.nv/ComputeCache
+              mountPath: /isaac-sim/.nv/ComputeCache
               subPath: compute-cache
+            - name: cache
+              mountPath: /root/.nvidia-omniverse
+              subPath: nvidia-omniverse
             - name: tmp
               mountPath: /tmp
           readinessProbe:
@@ -97,32 +102,6 @@ spec:
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 6
-        - name: tls-proxy
-          image: docker.io/nginx:1.27-alpine
-          ports:
-            - name: signaling-tls
-              containerPort: 8443
-              protocol: TCP
-          volumeMounts:
-            - name: tls-proxy-conf
-              mountPath: /etc/nginx/nginx.conf
-              subPath: nginx.conf
-              readOnly: true
-            - name: tls
-              mountPath: /etc/nginx/tls
-              readOnly: true
-          readinessProbe:
-            tcpSocket:
-              port: signaling-tls
-            initialDelaySeconds: 5
-            periodSeconds: 10
-          resources:
-            requests:
-              cpu: 50m
-              memory: 64Mi
-            limits:
-              cpu: 200m
-              memory: 128Mi
       volumes:
         - name: cache
           persistentVolumeClaim:
@@ -130,12 +109,6 @@ spec:
         - name: tmp
           emptyDir:
             sizeLimit: 10Gi
-        - name: tls
-          secret:
-            secretName: coturn-tls
-        - name: tls-proxy-conf
-          configMap:
-            name: tls-proxy-config
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
