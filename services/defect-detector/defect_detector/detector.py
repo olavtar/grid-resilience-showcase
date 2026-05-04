@@ -41,7 +41,16 @@ SEVERITY_OVERRIDES: dict[str, str] = {
 
 
 def _normalize_defect_type(raw: str) -> str:
-    return DEFECT_TYPE_ALIASES.get(raw, raw)
+    if raw in DEFECT_TYPE_ALIASES:
+        return DEFECT_TYPE_ALIASES[raw]
+    lower = raw.lower()
+    if "crossarm" in lower or "cross_arm" in lower:
+        return "cracked_crossarm"
+    if "ice" in lower:
+        return "ice_accumulation"
+    if "vegetation" in lower:
+        return "vegetation_encroachment"
+    return raw
 
 
 async def analyze_frame(
