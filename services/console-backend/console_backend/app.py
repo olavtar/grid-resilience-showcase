@@ -79,7 +79,7 @@ async def events(request: Request) -> EventSourceResponse:
     """SSE stream of all grid.* Kafka events."""
     return EventSourceResponse(
         event_stream(_mux()),
-        ping=15,
+        ping=1,
         headers={"X-Accel-Buffering": "no"},
     )
 
