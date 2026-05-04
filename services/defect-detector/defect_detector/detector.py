@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import base64
 import json
+import re
 import time
 from pathlib import Path
 
@@ -70,8 +71,12 @@ async def analyze_frame(
     try:
         data = response.json()
         message = data["choices"][0]["message"]
-        content = message.get("content") or message.get("reasoning") or ""
-        parsed = json.loads(content)
+        raw_text = message.get("content") or message.get("reasoning") or ""
+        json_match = re.search(r"\{[\s\S]*\}", raw_text)
+        if json_match is None:
+            logger.warning("vllm_no_json_in_response", text=raw_text[:200])
+            return [], latency_ms
+        parsed = json.loads(json_match.group())
         raw_findings = parsed.get("findings", [])
     except (json.JSONDecodeError, KeyError, IndexError, TypeError) as e:
         logger.warning("vllm_response_parse_error", error=str(e))
