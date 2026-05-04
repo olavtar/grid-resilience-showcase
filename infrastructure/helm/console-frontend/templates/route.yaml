@@ -1,0 +1,16 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: console-frontend
+  labels:
+    {{- include "console-frontend.labels" . | nindent 4 }}
+  annotations:
+    haproxy.router.openshift.io/timeout: {{ .Values.route.timeout | default "300s" }}
+spec:
+  tls:
+    termination: edge
+  to:
+    kind: Service
+    name: console-frontend
+  port:
+    targetPort: http

@@ -1,0 +1,18 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: kit-substation
+  namespace: {{ include "kit-substation.namespace" . }}
+  labels:
+    app.kubernetes.io/name: kit-substation
+    {{- include "kit-substation.labels" . | nindent 4 }}
+  annotations:
+    haproxy.router.openshift.io/timeout: 1h
+spec:
+  tls:
+    termination: edge
+  to:
+    kind: Service
+    name: kit-substation
+  port:
+    targetPort: signaling
