@@ -28,8 +28,8 @@ def _load_crews(dsn: str) -> list[dict[str, Any]]:
     with psycopg.connect(dsn) as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT crew_id, crew_name, lat, lon, status, "
-                "certifications, remaining_shift_minutes "
+                "SELECT id, name, current_lat, current_lon, status, "
+                "skills, certifications, shift_start, shift_end "
                 "FROM crews WHERE status = 'available'"
             )
             cols = [desc[0] for desc in (cur.description or [])]
