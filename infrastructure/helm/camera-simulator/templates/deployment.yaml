@@ -50,8 +50,7 @@ spec:
                 secretKeyRef:
                   name: grid-postgres-pguser-gridops
                   key: password
-            - name: DB_PASSWORD
-              value: {{ .Values.database.password | quote }}
+
             - name: IMAGE_DIR
               value: {{ .Values.imageDir | quote }}
             {{- range $key, $val := .Values.env }}
