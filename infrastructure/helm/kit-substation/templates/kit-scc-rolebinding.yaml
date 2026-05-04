@@ -1,0 +1,16 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kit-substation-anyuid
+  namespace: {{ include "kit-substation.namespace" . }}
+  labels:
+    app.kubernetes.io/name: kit-substation
+    {{- include "kit-substation.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:openshift:scc:anyuid
+subjects:
+  - kind: ServiceAccount
+    name: kit-substation
+    namespace: {{ include "kit-substation.namespace" . }}
