@@ -46,6 +46,7 @@ export function GridMap({ assets, segments, cameras, riskScores, faults, dispatc
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const fittedRef = useRef(false);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -53,8 +54,8 @@ export function GridMap({ assets, segments, cameras, riskScores, faults, dispatc
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
-      center: [-79.47, 36.09],
-      zoom: 13,
+      center: [-79.46, 36.09],
+      zoom: 12,
     });
 
     map.on("load", () => {
@@ -139,6 +140,17 @@ export function GridMap({ assets, segments, cameras, riskScores, faults, dispatc
     const map = mapRef.current;
 
     const assetLookup = new Map(assets.map((a) => [a.id, a]));
+
+    if (assets.length > 0 && !fittedRef.current) {
+      fittedRef.current = true;
+      const lons = assets.map((a) => a.lon);
+      const lats = assets.map((a) => a.lat);
+      map.fitBounds(
+        [[Math.min(...lons) - 0.01, Math.min(...lats) - 0.005],
+         [Math.max(...lons) + 0.01, Math.max(...lats) + 0.005]],
+        { padding: 40, maxZoom: 14 }
+      );
+    }
 
     const assetFeatures: Feature<Point>[] = assets.map((a) => ({
       type: "Feature" as const,
