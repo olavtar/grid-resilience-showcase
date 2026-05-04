@@ -95,19 +95,26 @@ async def analyze_frame(
         logger.warning("vllm_response_parse_error", error=str(e))
         return [], latency_ms
 
+    severity_map = {"minor": "warning", "low": "info", "medium": "major", "high": "critical"}
+    valid_severities = {"info", "warning", "major", "critical"}
+
     findings = []
     for f in raw_findings:
         confidence = f.get("confidence", 0.0)
         if confidence < settings.confidence_threshold:
             continue
         defect_type = _normalize_defect_type(f.get("defect_type", "unknown"))
+        raw_severity = f.get("severity", "info")
+        severity = severity_map.get(raw_severity, raw_severity)
+        if severity not in valid_severities:
+            severity = "major"
         findings.append(
             DefectFinding(
                 defect_type=defect_type,
-                severity=f.get("severity", "info"),
+                severity=severity,
                 confidence=confidence,
                 description=f.get("description", ""),
-                recommended_action=f.get("recommended_action", ""),
+                recommended_action=f.get("recommended_action", f.get("action", "")),
             )
         )
 
