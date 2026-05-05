@@ -90,6 +90,16 @@ async def readyz() -> dict[str, str]:
     return {"status": "ready"}
 
 
+@app.post("/dispatch/reset")
+async def reset_dispatch() -> dict[str, str]:
+    """Clear all pending work orders and plans."""
+    with lock:
+        state.pending_work_orders.clear()
+        state.active_plans.clear()
+        state.active_faults.clear()
+    return {"status": "reset"}
+
+
 @app.post("/dispatch/optimize")
 async def optimize() -> dict[str, Any]:
     """Trigger optimization from pending work orders."""
@@ -116,11 +126,11 @@ async def optimize() -> dict[str, Any]:
 
     # Build lookup dicts for guardrails
     wo_dict = {wo.get("work_order_id", wo.get("event_id", "")): wo for wo in work_orders}
-    crew_dict = {c["crew_id"]: c for c in crews}
+    crew_dict = {c.get("crew_id") or c.get("id", ""): c for c in crews}
 
-    assignment_dicts = [a.model_dump() for a in assignments]
-    guardrails_results = validate_dispatch_plan(
-        assignment_dicts,
+    pre_guard_dicts = [a.model_dump() for a in assignments]
+    guardrails_results, guardrails_messages = validate_dispatch_plan(
+        pre_guard_dicts,
         wo_dict,
         crew_dict,
         active_faults,
@@ -131,8 +141,11 @@ async def optimize() -> dict[str, Any]:
     for a in assignments:
         gr = guardrails_results.get(a.crew_id, "pass")
         a.guardrails_result = gr
-        if gr == "block":
-            a.guardrails_message = "Blocked by safety guardrails"
+        msg = guardrails_messages.get(a.crew_id)
+        if msg:
+            a.guardrails_message = msg
+
+    assignment_dicts = [a.model_dump() for a in assignments]
 
     plan = DispatchPlan(
         plan_id=plan_id,
@@ -160,11 +173,8 @@ async def optimize() -> dict[str, Any]:
     publish_event(producer, "grid.ops.events", ops)
     producer.flush()
 
-    # Clear pending work orders that were assigned
-    assigned_wo_ids = {a.work_order_id for a in assignments}
     with lock:
-        for wo_id in assigned_wo_ids:
-            state.pending_work_orders.pop(wo_id, None)
+        state.pending_work_orders.clear()
 
     # Auto-approve in storm-auto mode for qualifying priorities
     if settings.approval_mode == "storm-auto":

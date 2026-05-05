@@ -13,6 +13,7 @@ from pathlib import Path
 
 import httpx
 import numpy as np
+import pyproj
 import structlog
 from confluent_kafka import Producer
 
@@ -35,25 +36,40 @@ ICE_ACCUMULATION_ALERT_MM = 10.0
 
 CORRDIFF_OUTPUT_VARS = ["u10m", "v10m", "t2m", "tp", "csnow", "cicep", "cfrzr", "crain"]
 
-CONUS_LAT_START = 21.138
-CONUS_LAT_END = 52.615
-CONUS_LON_START = -134.09
-CONUS_LON_END = -60.919
 CONUS_NLAT = 1056
 CONUS_NLON = 1792
 
+# HRRR Lambert Conformal Conic projection (CorrDiff output grid)
+_HRRR_PROJ = pyproj.Proj(proj="lcc", lat_1=38.5, lat_2=38.5, lat_0=38.5, lon_0=-97.5, R=6371229)
+_HRRR_DX = 3000.0
+_HRRR_DY = 3000.0
+_HRRR_NX = 1799
+_HRRR_NY = 1059
+_X0, _Y0 = _HRRR_PROJ(-122.719528, 21.138123)
+_CD_COL_OFFSET = (_HRRR_NX - CONUS_NLON) // 2
+_CD_ROW_OFFSET = (_HRRR_NY - CONUS_NLAT) // 2
+
 
 def _pixel_to_latlon(row: int, col: int) -> tuple[float, float]:
-    """Convert CorrDiff output pixel to lat/lon."""
-    lat = CONUS_LAT_START + (CONUS_LAT_END - CONUS_LAT_START) * row / (CONUS_NLAT - 1)
-    lon = CONUS_LON_START + (CONUS_LON_END - CONUS_LON_START) * col / (CONUS_NLON - 1)
-    return lat, lon
+    """Convert CorrDiff output pixel to lat/lon via HRRR Lambert Conformal."""
+    x = _X0 + (col + _CD_COL_OFFSET) * _HRRR_DX
+    y = _Y0 + (row + _CD_ROW_OFFSET) * _HRRR_DY
+    lon, lat = _HRRR_PROJ(x, y, inverse=True)
+    return float(lat), float(lon)
+
+
+def _latlon_to_pixel(lat: float, lon: float) -> tuple[int, int]:
+    """Convert lat/lon to CorrDiff output pixel indices."""
+    x, y = _HRRR_PROJ(lon, lat)
+    col = round((x - _X0) / _HRRR_DX - _CD_COL_OFFSET)
+    row = round((y - _Y0) / _HRRR_DY - _CD_ROW_OFFSET)
+    return row, col
 
 
 def _extract_piedmont_cells(
     output_array: np.ndarray, settings: WeatherServiceSettings
 ) -> list[GridCell]:
-    """Extract grid cells within an expanded Piedmont NC region from CorrDiff output."""
+    """Extract grid cells within an expanded Burlington NC region from CorrDiff output."""
     padding = 0.5
     lat_min = settings.corridor_lat_min - padding
     lat_max = settings.corridor_lat_max + padding
@@ -63,12 +79,13 @@ def _extract_piedmont_cells(
     nlat = output_array.shape[-2]
     nlon = output_array.shape[-1]
 
-    row_start = max(0, int((lat_min - CONUS_LAT_START) / (CONUS_LAT_END - CONUS_LAT_START) * (nlat - 1)))
-    row_end = min(nlat - 1, int((lat_max - CONUS_LAT_START) / (CONUS_LAT_END - CONUS_LAT_START) * (nlat - 1)))
-    col_start = max(0, int((lon_min - CONUS_LON_START) / (CONUS_LON_END - CONUS_LON_START) * (nlon - 1)))
-    col_end = min(nlon - 1, int((lon_max - CONUS_LON_START) / (CONUS_LON_END - CONUS_LON_START) * (nlon - 1)))
+    r_sw, c_sw = _latlon_to_pixel(lat_min, lon_min)
+    r_ne, c_ne = _latlon_to_pixel(lat_max, lon_max)
+    row_start = max(0, min(r_sw, r_ne))
+    row_end = min(nlat - 1, max(r_sw, r_ne))
+    col_start = max(0, min(c_sw, c_ne))
+    col_end = min(nlon - 1, max(c_sw, c_ne))
 
-    # Squeeze batch/sample dims: (1,1,8,H,W) → (8,H,W)
     arr = output_array
     while arr.ndim > 3:
         arr = arr[0]
@@ -76,8 +93,7 @@ def _extract_piedmont_cells(
     cells = []
     for r in range(row_start, row_end + 1):
         for c in range(col_start, col_end + 1):
-            lat = CONUS_LAT_START + (CONUS_LAT_END - CONUS_LAT_START) * r / (nlat - 1)
-            lon = CONUS_LON_START + (CONUS_LON_END - CONUS_LON_START) * c / (nlon - 1)
+            lat, lon = _pixel_to_latlon(r, c)
             cells.append(
                 GridCell(
                     lat=round(lat, 4),
@@ -150,6 +166,10 @@ async def run_forecast(
 
     logger.info("corrdiff_output_shape", shape=output_array.shape)
 
+    cache_path = Path("/cache/corrdiff_output_cache.npy")
+    np.save(str(cache_path), output_array)
+    logger.info("corrdiff_output_cached", path=str(cache_path))
+
     grid_cells = _extract_piedmont_cells(output_array, settings)
 
     now = datetime.now(tz=UTC)
@@ -175,7 +195,7 @@ async def run_forecast(
         category="weather",
         title="Earth-2 CorrDiff forecast published",
         detail=f"Live 3km downscaled forecast: {len(grid_cells)} grid cells "
-        f"over Piedmont NC corridor.",
+        f"over Burlington NC corridor.",
         severity=Severity.INFO,
         trace_id=trace_id,
         source_service="weather-service",
@@ -184,6 +204,54 @@ async def run_forecast(
     producer.flush()
 
     logger.info("forecast_published", cells=len(grid_cells))
+    return forecasts
+
+
+def publish_cached_forecast(
+    settings: WeatherServiceSettings,
+    producer: Producer,
+) -> list[WeatherForecast] | None:
+    """Republish the last CorrDiff forecast from cached output."""
+    cache_path = Path("/cache/corrdiff_output_cache.npy")
+    if not cache_path.exists():
+        logger.warning("no_cached_forecast")
+        return None
+
+    output_array = np.load(str(cache_path))
+    grid_cells = _extract_piedmont_cells(output_array, settings)
+
+    trace_id = uuid.uuid4().hex
+    now = datetime.now(tz=UTC)
+    forecast = WeatherForecast(
+        forecast_hour=0,
+        valid_time=now,
+        grid_cells=grid_cells,
+        resolution_km=3.0,
+        model="corrdiff",
+        trace_id=trace_id,
+        source_service="weather-service",
+    )
+
+    forecasts = [forecast]
+    for fc in forecasts:
+        publish_event(producer, "grid.weather.forecast", fc)
+        alerts = _evaluate_alerts(fc, trace_id)
+        for alert in alerts:
+            publish_event(producer, "grid.weather.alerts", alert)
+
+    ops = OpsEvent(
+        category="weather",
+        title="Earth-2 CorrDiff forecast published",
+        detail=f"Live 3km downscaled forecast: {len(grid_cells)} grid cells "
+        f"over Burlington NC corridor.",
+        severity=Severity.INFO,
+        trace_id=trace_id,
+        source_service="weather-service",
+    )
+    publish_event(producer, "grid.ops.events", ops)
+    producer.flush()
+
+    logger.info("cached_forecast_published", cells=len(grid_cells))
     return forecasts
 
 

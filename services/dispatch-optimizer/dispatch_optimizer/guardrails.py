@@ -15,9 +15,10 @@ def validate_dispatch_plan(
     crews: dict[str, Any],
     active_faults: list[str],
     risk_scores: dict[str, float],
-) -> dict[str, str]:
-    """Run safety checks on each assignment, returning crew_id -> pass/warn/block."""
+) -> tuple[dict[str, str], dict[str, str]]:
+    """Run safety checks. Returns (crew_id -> result, crew_id -> message)."""
     results: dict[str, str] = {}
+    messages: dict[str, str] = {}
 
     for assignment in assignments:
         crew_id = assignment.get("crew_id", "")
@@ -26,27 +27,23 @@ def validate_dispatch_plan(
         crew = crews.get(crew_id, {})
 
         result = "pass"
+        msg = ""
 
-        # 1. Fault zone: no crew dispatched to segment with active fault
-        asset_id = wo.get("asset_id", "")
-        if asset_id in active_faults:
-            result = "block"
-            logger.warning("guardrail_fault_zone", crew_id=crew_id, asset_id=asset_id)
+        if asset_id := wo.get("asset_id", ""):
+            if asset_id in active_faults:
+                result = "block"
+                msg = f"Active fault zone on {asset_id}"
+                logger.warning("guardrail_fault_zone", crew_id=crew_id, asset_id=asset_id)
 
-        # 2. Certification check
         if result != "block":
             required = set(wo.get("required_skills", []))
-            crew_certs = set(crew.get("certifications", []))
-            missing = required - crew_certs
+            crew_skills = set(crew.get("skills", []) + crew.get("certifications", []))
+            missing = required - crew_skills
             if missing:
                 result = "block"
-                logger.warning(
-                    "guardrail_certification",
-                    crew_id=crew_id,
-                    missing=list(missing),
-                )
+                msg = f"Missing: {', '.join(sorted(missing))}"
+                logger.warning("guardrail_certification", crew_id=crew_id, missing=list(missing))
 
-        # 3. Shift time check
         if result != "block":
             remaining_shift = crew.get("remaining_shift_minutes", 480)
             travel_time = assignment.get("eta_minutes") or 0
@@ -54,18 +51,22 @@ def validate_dispatch_plan(
             buffer = remaining_shift - travel_time - duration
             if buffer < 0:
                 result = "block"
+                msg = "Exceeds remaining shift time"
                 logger.warning("guardrail_shift_exceeded", crew_id=crew_id, buffer=buffer)
             elif buffer < 30 and result == "pass":
                 result = "warn"
+                msg = "Tight shift buffer"
                 logger.info("guardrail_shift_tight", crew_id=crew_id, buffer=buffer)
 
-        # 4. Weather red-zone check
         if result not in ("block",):
-            score = risk_scores.get(asset_id, 0.0)
+            score = risk_scores.get(wo.get("asset_id", ""), 0.0)
             if score > 0.9 and result == "pass":
                 result = "warn"
+                msg = "High weather risk at location"
                 logger.info("guardrail_weather_risk", crew_id=crew_id, risk_score=score)
 
         results[crew_id] = result
+        if msg:
+            messages[crew_id] = msg
 
-    return results
+    return results, messages

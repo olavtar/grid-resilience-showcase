@@ -14,9 +14,9 @@ class Beat(StrEnum):
     FORECAST = "forecast"
     TRIAGE = "triage"
     ESCALATE = "escalate"
-    DETECT = "detect"
     DISPATCH = "dispatch"
     STORM = "storm"
+    RESTORE = "restore"
     TRACE = "trace"
 
 

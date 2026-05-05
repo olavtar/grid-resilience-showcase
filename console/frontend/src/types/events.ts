@@ -49,6 +49,7 @@ export interface DispatchAssignment extends GridEvent {
   guardrails_result?: string;
   guardrails_message?: string;
   dispatcher_justification?: string;
+  work_order_title?: string;
 }
 
 export interface FaultEvent extends GridEvent {
@@ -57,6 +58,7 @@ export interface FaultEvent extends GridEvent {
   segment_id: string;
   fault_type: string;
   affected_customers: number;
+  affected_asset_ids: string[];
   lat: number;
   lon: number;
 }

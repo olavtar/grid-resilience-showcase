@@ -151,9 +151,6 @@ def consumer_loop(
 
             for finding in findings:
                 if finding.severity in (Severity.CRITICAL, Severity.MAJOR):
-                    wo = _create_work_order(finding, camera_id, asset_id, asset_locations, trace_id)
-                    publish_event(producer, "grid.crew.work-orders", wo)
-
                     ops = OpsEvent(
                         category="camera",
                         title=f"Defect detected: {finding.defect_type}",

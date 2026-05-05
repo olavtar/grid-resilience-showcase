@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -21,15 +22,17 @@ from grid_common.events import OpsEvent, Severity
 from grid_common.kafka import create_producer, publish_event
 from grid_common.logging import setup_logging
 from scenario_engine.emitter import (
+    emit_dispatch_work_orders,
     emit_escalate_events,
-    emit_fault_events,
     emit_forecast_events,
-    emit_storm_events,
+    emit_storm_fault,
+    emit_storm_restore,
 )
 from scenario_engine.settings import ScenarioEngineSettings
 from scenario_engine.state import Beat, ScenarioState
 
 logger = structlog.get_logger()
+_background_tasks: set[asyncio.Task[None]] = set()
 settings = ScenarioEngineSettings()
 state = ScenarioState()
 producer: Producer | None = None
@@ -208,13 +211,18 @@ async def start_scenario(scenario_id: str = "ice_storm_piedmont") -> ActionRespo
     beat = state.advance()
 
     try:
-        resp = await _client().post(f"{settings.weather_service_url}/forecast/run")
+        resp = await _client().post(f"{settings.weather_service_url}/forecast/publish-cached")
         if resp.status_code == 200:
-            logger.info("weather_service_forecast_triggered")
+            logger.info("weather_cached_forecast_published")
             count = 1
         else:
-            logger.warning("weather_service_failed", status=resp.status_code)
-            count = emit_forecast_events(_producer(), config, trace_id)
+            resp = await _client().post(f"{settings.weather_service_url}/forecast/run")
+            if resp.status_code == 200:
+                logger.info("weather_service_forecast_triggered")
+                count = 1
+            else:
+                logger.warning("weather_service_failed", status=resp.status_code)
+                count = emit_forecast_events(_producer(), config, trace_id)
     except Exception:
         logger.warning("weather_service_unreachable_using_fallback")
         count = emit_forecast_events(_producer(), config, trace_id)
@@ -231,6 +239,27 @@ async def start_scenario(scenario_id: str = "ice_storm_piedmont") -> ActionRespo
     )
 
 
+async def _trigger_optimization() -> None:
+    """Background task: wait for work orders to arrive in Kafka, then trigger cuOpt."""
+    for attempt in range(5):
+        await asyncio.sleep(3)
+        try:
+            resp = await _client().post(
+                f"{settings.dispatch_optimizer_url}/dispatch/optimize", timeout=30.0
+            )
+            if resp.status_code == 200:
+                logger.info("cuopt_optimization_triggered")
+                return
+            if resp.status_code == 400:
+                logger.info("dispatch_waiting_for_work_orders", attempt=attempt + 1)
+                continue
+            logger.warning("cuopt_optimization_failed", status=resp.status_code)
+            return
+        except Exception:
+            logger.warning("dispatch_optimizer_unreachable")
+            return
+
+
 @app.post("/scenario/advance", response_model=ActionResponse)
 async def advance_scenario() -> ActionResponse:
     if not state.is_running:
@@ -243,7 +272,24 @@ async def advance_scenario() -> ActionResponse:
 
     if beat == Beat.ESCALATE:
         count = emit_escalate_events(_producer(), config, trace_id)
-    elif beat in (Beat.TRIAGE, Beat.DETECT, Beat.DISPATCH, Beat.TRACE):
+    elif beat == Beat.DISPATCH:
+        count = emit_dispatch_work_orders(_producer(), trace_id)
+        task = asyncio.create_task(_trigger_optimization())
+        _background_tasks.add(task)
+        task.add_done_callback(_background_tasks.discard)
+    elif beat == Beat.STORM:
+        count = emit_storm_fault(_producer(), config, trace_id)
+        try:
+            await _client().post(
+                f"{settings.camera_simulator_url}/cameras/CAM-P037/set-image",
+                json={"filename": "cam_p037_fault.jpg"},
+            )
+            await _client().post(f"{settings.camera_simulator_url}/cameras/CAM-P037/publish")
+        except Exception:
+            logger.warning("storm_camera_publish_failed")
+    elif beat == Beat.RESTORE:
+        count = emit_storm_restore(_producer(), config, trace_id)
+    elif beat in (Beat.TRIAGE, Beat.TRACE):
         ops = OpsEvent(
             category="system",
             title=f"Beat advanced: {beat.value}",
@@ -268,54 +314,30 @@ async def advance_scenario() -> ActionResponse:
     )
 
 
-@app.post("/scenario/trigger-storm", response_model=ActionResponse)
-async def trigger_storm() -> ActionResponse:
-    if not state.is_running:
-        raise HTTPException(status_code=409, detail="No scenario running.")
-    if state.storm_triggered:
-        raise HTTPException(status_code=409, detail="Storm already triggered.")
-
-    trace_id = str(uuid.uuid4()).replace("-", "")
-    state.current_beat = Beat.STORM
-    count = emit_storm_events(_producer(), state.scenario_config, trace_id)
-    state.storm_triggered = True
-    state.events_emitted += count
-
-    logger.info("storm_triggered", events=count)
-
-    return ActionResponse(
-        action="trigger-storm",
-        beat=Beat.STORM.value,
-        events_emitted=state.events_emitted,
-        message="Storm conditions activated.",
-    )
-
-
-@app.post("/scenario/trigger-fault", response_model=ActionResponse)
-async def trigger_fault() -> ActionResponse:
-    if not state.is_running:
-        raise HTTPException(status_code=409, detail="No scenario running.")
-    if state.fault_triggered:
-        raise HTTPException(status_code=409, detail="Fault already triggered.")
-
-    trace_id = str(uuid.uuid4()).replace("-", "")
-    count = emit_fault_events(_producer(), state.scenario_config, trace_id)
-    state.fault_triggered = True
-    state.events_emitted += count
-
-    logger.info("fault_triggered", events=count)
-
-    return ActionResponse(
-        action="trigger-fault",
-        beat=Beat.STORM.value,
-        events_emitted=state.events_emitted,
-        message="Fault triggered with AMI outages and restoration switching.",
-    )
-
-
 @app.post("/scenario/reset", response_model=ActionResponse)
 async def reset_scenario() -> ActionResponse:
     state.reset()
+    try:
+        await _client().post(f"{settings.camera_simulator_url}/cameras/reset")
+    except Exception:
+        logger.warning("camera_reset_failed")
+    try:
+        await _client().post(f"{settings.dispatch_optimizer_url}/dispatch/reset")
+    except Exception:
+        logger.warning("dispatch_reset_failed")
+
+    ops = OpsEvent(
+        category="system",
+        title="Scenario reset",
+        detail="Scenario reset to idle.",
+        severity=Severity.INFO,
+        trace_id=str(uuid.uuid4()).replace("-", ""),
+        source_service="scenario-engine",
+    )
+    p = _producer()
+    publish_event(p, "grid.ops.events", ops)
+    p.flush()
+
     logger.info("scenario_reset")
     return ActionResponse(
         action="reset",

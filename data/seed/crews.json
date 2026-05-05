@@ -2,105 +2,152 @@
   {
     "id": "CREW-A",
     "name": "Crew Alpha",
-    "skills": ["lineman", "hot_work"],
-    "certifications": ["hot_stick", "bucket_truck", "cdl"],
+    "skills": [
+      "lineman",
+      "hot_work"
+    ],
+    "certifications": [
+      "hot_stick",
+      "bucket_truck",
+      "cdl"
+    ],
     "shift_start": "06:00",
     "shift_end": "18:00",
-    "home_base_lat": 36.0960,
-    "home_base_lon": -79.4370,
-    "current_lat": 36.0960,
-    "current_lon": -79.4370,
+    "home_base_lat": 36.076,
+    "home_base_lon": -79.475,
+    "current_lat": 36.076,
+    "current_lon": -79.475,
     "status": "available"
   },
   {
     "id": "CREW-B",
     "name": "Crew Bravo",
-    "skills": ["lineman"],
-    "certifications": ["hot_stick", "bucket_truck", "cdl"],
+    "skills": [
+      "lineman"
+    ],
+    "certifications": [
+      "hot_stick",
+      "bucket_truck",
+      "cdl"
+    ],
     "shift_start": "06:00",
     "shift_end": "18:00",
-    "home_base_lat": 36.0780,
-    "home_base_lon": -79.4200,
-    "current_lat": 36.0780,
-    "current_lon": -79.4200,
+    "home_base_lat": 36.105,
+    "home_base_lon": -79.395,
+    "current_lat": 36.105,
+    "current_lon": -79.395,
     "status": "available"
   },
   {
     "id": "CREW-C",
     "name": "Crew Charlie",
-    "skills": ["vegetation"],
-    "certifications": ["cdl"],
+    "skills": [
+      "lineman",
+      "vegetation"
+    ],
+    "certifications": [
+      "cdl"
+    ],
     "shift_start": "07:00",
     "shift_end": "19:00",
-    "home_base_lat": 36.1050,
-    "home_base_lon": -79.4300,
-    "current_lat": 36.1050,
-    "current_lon": -79.4300,
+    "home_base_lat": 36.055,
+    "home_base_lon": -79.445,
+    "current_lat": 36.055,
+    "current_lon": -79.445,
     "status": "available"
   },
   {
     "id": "CREW-D",
     "name": "Crew Delta",
-    "skills": ["lineman", "hot_work"],
-    "certifications": ["hot_stick", "bucket_truck", "cdl"],
+    "skills": [
+      "lineman",
+      "hot_work"
+    ],
+    "certifications": [
+      "hot_stick",
+      "bucket_truck",
+      "cdl"
+    ],
     "shift_start": "06:00",
     "shift_end": "18:00",
-    "home_base_lat": 36.0985,
-    "home_base_lon": -79.5030,
-    "current_lat": 36.0985,
-    "current_lon": -79.5030,
+    "home_base_lat": 36.12,
+    "home_base_lon": -79.46,
+    "current_lat": 36.12,
+    "current_lon": -79.46,
     "status": "available"
   },
   {
     "id": "CREW-E",
     "name": "Crew Echo",
-    "skills": ["substation_tech"],
-    "certifications": ["hot_stick", "cdl"],
+    "skills": [
+      "substation_tech"
+    ],
+    "certifications": [
+      "hot_stick",
+      "cdl"
+    ],
     "shift_start": "06:00",
     "shift_end": "18:00",
-    "home_base_lat": 36.0940,
-    "home_base_lon": -79.4400,
-    "current_lat": 36.0940,
-    "current_lon": -79.4400,
+    "home_base_lat": 36.09,
+    "home_base_lon": -79.53,
+    "current_lat": 36.09,
+    "current_lon": -79.53,
     "status": "available"
   },
   {
     "id": "CREW-F",
     "name": "Crew Foxtrot",
-    "skills": ["vegetation"],
-    "certifications": ["cdl"],
+    "skills": [
+      "vegetation"
+    ],
+    "certifications": [
+      "cdl"
+    ],
     "shift_start": "07:00",
     "shift_end": "19:00",
-    "home_base_lat": 36.0870,
-    "home_base_lon": -79.5120,
-    "current_lat": 36.0870,
-    "current_lon": -79.5120,
+    "home_base_lat": 36.068,
+    "home_base_lon": -79.38,
+    "current_lat": 36.068,
+    "current_lon": -79.38,
     "status": "available"
   },
   {
     "id": "CREW-G",
     "name": "Crew Golf",
-    "skills": ["lineman"],
-    "certifications": ["hot_stick", "bucket_truck", "cdl"],
+    "skills": [
+      "lineman"
+    ],
+    "certifications": [
+      "hot_stick",
+      "bucket_truck",
+      "cdl"
+    ],
     "shift_start": "07:00",
     "shift_end": "19:00",
-    "home_base_lat": 36.1100,
-    "home_base_lon": -79.5170,
-    "current_lat": 36.1100,
-    "current_lon": -79.5170,
+    "home_base_lat": 36.13,
+    "home_base_lon": -79.41,
+    "current_lat": 36.13,
+    "current_lon": -79.41,
     "status": "available"
   },
   {
     "id": "CREW-H",
     "name": "Crew Hotel",
-    "skills": ["lineman", "substation_tech"],
-    "certifications": ["hot_stick", "bucket_truck", "cdl"],
+    "skills": [
+      "lineman",
+      "substation_tech"
+    ],
+    "certifications": [
+      "hot_stick",
+      "bucket_truck",
+      "cdl"
+    ],
     "shift_start": "06:00",
     "shift_end": "18:00",
-    "home_base_lat": 36.0620,
-    "home_base_lon": -79.4020,
-    "current_lat": 36.0620,
-    "current_lon": -79.4020,
+    "home_base_lat": 36.045,
+    "home_base_lon": -79.5,
+    "current_lat": 36.045,
+    "current_lon": -79.5,
     "status": "available"
   }
 ]

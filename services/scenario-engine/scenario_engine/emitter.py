@@ -11,7 +11,6 @@ import structlog
 from confluent_kafka import Producer
 
 from grid_common.events import (
-    AmiOutage,
     CameraEscalate,
     CustomerImpact,
     FaultEvent,
@@ -136,93 +135,128 @@ def emit_escalate_events(producer: Producer, config: dict[str, Any], trace_id: s
     return 2
 
 
-def emit_storm_events(producer: Producer, config: dict[str, Any], trace_id: str) -> int:
-    """Emit intensified weather alerts for storm arrival."""
-    alert = WeatherAlert(
-        alert_type="ice_accumulation",
-        severity=Severity.CRITICAL,
-        message="Ice accumulation exceeding 12mm on northern corridor. "
-        "Peak loading on conductors and crossarms.",
-        affected_area_lat_min=config.get("lat_min", 36.05),
-        affected_area_lat_max=config.get("lat_max", 36.12),
-        affected_area_lon_min=config.get("lon_min", -79.55),
-        affected_area_lon_max=config.get("lon_max", -79.40),
-        forecast_hour=18,
-        trace_id=trace_id,
-        source_service="scenario-engine",
-    )
-    publish_event(producer, "grid.weather.alerts", alert)
+def emit_dispatch_work_orders(producer: Producer, trace_id: str) -> int:
+    """Emit work orders for defects found during camera inspection."""
+    count = 0
 
-    impact = CustomerImpact(
-        fault_id="",
-        feeder_id="",
-        total_affected=0,
-        trace_id=trace_id,
-        source_service="scenario-engine",
-    )
-    publish_event(producer, "grid.customer.impact", impact)
+    work_orders = [
+        WorkOrder(
+            asset_id="P-037",
+            title="Cracked crossarm repair",
+            description="Cracked crossarm detected by AI camera inspection. "
+            "Immediate replacement recommended before ice loading.",
+            priority=WorkOrderPriority.HIGH,
+            required_skills=["lineman", "bucket_truck"],
+            lat=36.0753,
+            lon=-79.4167,
+            estimated_duration_minutes=120,
+            trace_id=trace_id,
+            source_service="scenario-engine",
+        ),
+        WorkOrder(
+            asset_id="P-052",
+            title="Vegetation clearance",
+            description="Vegetation encroachment detected within 1.5m of conductor. "
+            "Clearance required before storm arrival.",
+            priority=WorkOrderPriority.HIGH,
+            required_skills=["lineman", "vegetation"],
+            lat=36.0573,
+            lon=-79.398,
+            estimated_duration_minutes=90,
+            trace_id=trace_id,
+            source_service="scenario-engine",
+        ),
+        WorkOrder(
+            asset_id="P-063",
+            title="Ice accumulation removal",
+            description="Ice accumulation detected on conductor spans. "
+            "De-icing required to prevent line failure.",
+            priority=WorkOrderPriority.CRITICAL,
+            required_skills=["lineman", "hot_work"],
+            lat=36.1076,
+            lon=-79.514,
+            estimated_duration_minutes=60,
+            trace_id=trace_id,
+            source_service="scenario-engine",
+        ),
+    ]
+
+    for wo in work_orders:
+        publish_event(producer, "grid.crew.work-orders", wo)
+        count += 1
 
     ops = OpsEvent(
-        category="weather",
-        title="Storm arrived",
-        detail="Ice storm peak conditions active. Monitoring 12,400 customers on affected feeders.",
-        severity=Severity.CRITICAL,
+        category="dispatch",
+        title="Work orders created from AI findings",
+        detail=f"{len(work_orders)} work orders generated from camera defect detections.",
+        severity=Severity.INFO,
         trace_id=trace_id,
         source_service="scenario-engine",
     )
     publish_event(producer, "grid.ops.events", ops)
+    count += 1
+
     producer.flush()
-    return 3
+    return count
 
 
-def emit_fault_events(producer: Producer, config: dict[str, Any], trace_id: str) -> int:
-    """Emit fault, AMI outage, and restoration events."""
-    count = 0
+DOWNSTREAM_ASSETS = [
+    "P-038",
+    "P-039",
+    "P-040",
+    "T-004",
+    "P-041",
+    "P-042",
+    "P-043",
+    "P-044",
+    "P-045",
+    "P-046",
+    "SW-004",
+    "P-047",
+    "P-048",
+    "P-049",
+    "P-050",
+    "T-005",
+    "P-051",
+    "P-052",
+    "P-053",
+    "P-054",
+    "P-055",
+]
 
+RESTORED_BY_SWITCH = [
+    "P-038",
+    "P-039",
+    "P-040",
+    "T-004",
+    "P-041",
+    "P-042",
+    "P-043",
+    "P-044",
+    "P-045",
+    "P-046",
+    "SW-004",
+]
+
+
+def emit_storm_fault(producer: Producer, config: dict[str, Any], trace_id: str) -> int:
+    """Beat: Storm — fault occurs, downstream assets lose power."""
     fault_config = config.get("fault", {})
     feeder_id = fault_config.get("feeder_id", "F-12")
-    segment_id = fault_config.get("segment_id", "SEG-052")
     affected_customers = fault_config.get("affected_customers", 847)
-    fault_lat = fault_config.get("lat", 36.088)
-    fault_lon = fault_config.get("lon", -79.465)
 
     fault = FaultEvent(
         feeder_id=feeder_id,
-        segment_id=segment_id,
+        segment_id="SEG-037",
         fault_type=FaultType.ICE_LOADING,
         affected_customers=affected_customers,
-        lat=fault_lat,
-        lon=fault_lon,
+        affected_asset_ids=DOWNSTREAM_ASSETS,
+        lat=36.0753,
+        lon=-79.4167,
         trace_id=trace_id,
         source_service="scenario-engine",
     )
     publish_event(producer, "grid.faults.detected", fault, key=feeder_id)
-    count += 1
-
-    ops_fault = OpsEvent(
-        category="fault",
-        title=f"Fault detected on {feeder_id}",
-        detail=f"Segment {segment_id}: {affected_customers} customers affected.",
-        severity=Severity.CRITICAL,
-        related_asset_id=segment_id,
-        trace_id=trace_id,
-        source_service="scenario-engine",
-    )
-    publish_event(producer, "grid.ops.events", ops_fault)
-    count += 1
-
-    ami_meters = fault_config.get("ami_meters", 20)
-    for i in range(ami_meters):
-        ami = AmiOutage(
-            meter_id=f"MTR-{segment_id}-{i:04d}",
-            asset_id=f"P-{51 + (i % 2):03d}",
-            segment_id=segment_id,
-            feeder_id=feeder_id,
-            trace_id=trace_id,
-            source_service="scenario-engine",
-        )
-        publish_event(producer, "grid.ami.outages", ami, key=feeder_id)
-        count += 1
 
     impact = CustomerImpact(
         fault_id=fault.fault_id,
@@ -233,74 +267,58 @@ def emit_fault_events(producer: Producer, config: dict[str, Any], trace_id: str)
         source_service="scenario-engine",
     )
     publish_event(producer, "grid.customer.impact", impact, key=feeder_id)
-    count += 1
 
-    switch_id = fault_config.get("switch_id", "TS-04")
+    ops = OpsEvent(
+        category="fault",
+        title=f"Fault on {feeder_id} at P-037",
+        detail=f"Ice loading failure. {affected_customers} customers affected. "
+        f"{len(DOWNSTREAM_ASSETS)} downstream assets without power.",
+        severity=Severity.CRITICAL,
+        related_asset_id="P-037",
+        trace_id=trace_id,
+        source_service="scenario-engine",
+    )
+    publish_event(producer, "grid.ops.events", ops)
+    producer.flush()
+    return 3
+
+
+def emit_storm_restore(producer: Producer, config: dict[str, Any], trace_id: str) -> int:
+    """Beat: Restore — automatic switching restores partial service."""
+    fault_config = config.get("fault", {})
+    feeder_id = fault_config.get("feeder_id", "F-12")
+    affected_customers = fault_config.get("affected_customers", 847)
     customers_restored = fault_config.get("customers_restored", 312)
+    switch_id = fault_config.get("switch_id", "TS-04")
+
     restoration = RestorationEvent(
-        fault_id=fault.fault_id,
+        fault_id="",
         switch_id=switch_id,
         action=SwitchAction.CLOSE,
         customers_restored=customers_restored,
         remaining_affected=affected_customers - customers_restored,
         etr_minutes=135,
+        restored_asset_ids=RESTORED_BY_SWITCH,
         adms_capacity_check="Receiving feeder capacity check: 4.2 MW available / "
         "3.1 MW transfer load — CLEAR. Tie switch close command authorized.",
         trace_id=trace_id,
         source_service="scenario-engine",
     )
     publish_event(producer, "grid.faults.restoration", restoration, key=feeder_id)
-    count += 1
 
-    impact_updated = CustomerImpact(
-        fault_id=fault.fault_id,
+    impact = CustomerImpact(
+        fault_id="",
         feeder_id=feeder_id,
         total_affected=affected_customers,
         restored=customers_restored,
         remaining=affected_customers - customers_restored,
         etr_minutes=135,
-        ami_confirmations=ami_meters,
         trace_id=trace_id,
         source_service="scenario-engine",
     )
-    publish_event(producer, "grid.customer.impact", impact_updated, key=feeder_id)
-    count += 1
+    publish_event(producer, "grid.customer.impact", impact, key=feeder_id)
 
-    wo_investigate = WorkOrder(
-        asset_id=segment_id,
-        title="Fault investigation — ice loading damage",
-        description=f"Investigate fault on {feeder_id} segment {segment_id}. "
-        "Suspected ice loading damage to conductor or crossarm.",
-        priority=WorkOrderPriority.CRITICAL,
-        required_skills=["lineman"],
-        lat=fault_lat,
-        lon=fault_lon,
-        fault_event_id=fault.fault_id,
-        estimated_duration_minutes=90,
-        trace_id=trace_id,
-        source_service="scenario-engine",
-    )
-    publish_event(producer, "grid.crew.work-orders", wo_investigate)
-    count += 1
-
-    wo_repair = WorkOrder(
-        asset_id=segment_id,
-        title="Line repair — restore faulted segment",
-        description=f"Repair and restore {feeder_id} segment {segment_id}. "
-        f"{affected_customers - customers_restored} customers remaining without power.",
-        priority=WorkOrderPriority.CRITICAL,
-        required_skills=["lineman", "bucket_truck"],
-        lat=fault_lat + 0.001,
-        lon=fault_lon + 0.001,
-        fault_event_id=fault.fault_id,
-        estimated_duration_minutes=120,
-        trace_id=trace_id,
-        source_service="scenario-engine",
-    )
-    publish_event(producer, "grid.crew.work-orders", wo_repair)
-    count += 1
-
-    ops_restore = OpsEvent(
+    ops = OpsEvent(
         category="restoration",
         title=f"Automatic switching — {customers_restored} customers restored",
         detail=f"{switch_id} closed. {affected_customers - customers_restored} remaining. "
@@ -309,8 +327,6 @@ def emit_fault_events(producer: Producer, config: dict[str, Any], trace_id: str)
         trace_id=trace_id,
         source_service="scenario-engine",
     )
-    publish_event(producer, "grid.ops.events", ops_restore)
-    count += 1
-
+    publish_event(producer, "grid.ops.events", ops)
     producer.flush()
-    return count
+    return 3

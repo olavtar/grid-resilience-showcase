@@ -15,7 +15,7 @@ from fastapi import FastAPI, HTTPException
 from grid_common.events import WeatherForecast
 from grid_common.kafka import create_producer
 from grid_common.logging import setup_logging
-from weather_service.forecast import run_forecast, warmup_nim
+from weather_service.forecast import publish_cached_forecast, run_forecast, warmup_nim
 from weather_service.settings import WeatherServiceSettings
 
 logger = structlog.get_logger()
@@ -84,6 +84,26 @@ async def forecast_run() -> dict[str, Any]:
 
     return {
         "status": "published",
+        "forecast_hours": [f.forecast_hour for f in forecasts],
+        "grid_cells": sum(len(f.grid_cells) for f in forecasts),
+    }
+
+
+@app.post("/forecast/publish-cached")
+async def forecast_publish_cached() -> dict[str, Any]:
+    """Republish the last CorrDiff forecast from cached output (instant)."""
+    global latest_forecasts
+    if producer is None:
+        raise HTTPException(status_code=503, detail="Not initialized")
+
+    forecasts = publish_cached_forecast(settings, producer)
+    if forecasts is None:
+        raise HTTPException(status_code=404, detail="No cached forecast available")
+
+    latest_forecasts = forecasts
+    return {
+        "status": "published",
+        "source": "cached",
         "forecast_hours": [f.forecast_hour for f in forecasts],
         "grid_cells": sum(len(f.grid_cells) for f in forecasts),
     }

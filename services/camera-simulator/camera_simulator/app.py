@@ -14,7 +14,7 @@ from typing import Any
 import psycopg
 import structlog
 from confluent_kafka import Producer
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 
 from camera_simulator.publisher import handle_escalate_event, publish_frame
 from camera_simulator.settings import CameraSimulatorSettings
@@ -53,18 +53,19 @@ _consumer_thread: threading.Thread | None = None
 _shutdown_event = threading.Event()
 
 
-CAMERA_IMAGES: dict[str, list[str]] = {
-    "CAM-P037": ["cam_p037_cracked.jpg"],
-    "CAM-P052": ["cam_p052_veg1.jpg"],
-    "CAM-P063": ["cam_p063_ice.jpg"],
+CAMERA_IMAGES: dict[str, str] = {
+    "CAM-P037": "cam_p037_cracked.jpg",
+    "CAM-P052": "cam_p052_veg1.jpg",
+    "CAM-P063": "cam_p063_ice.jpg",
 }
+
+_image_overrides: dict[str, str] = {}
 
 
 def _image_for_camera(camera_id: str, sequence: int) -> str:
-    """Select an image file for a camera based on frame sequence."""
-    images = CAMERA_IMAGES.get(camera_id, ["placeholder.png"])
-    idx = min(sequence, len(images) - 1)
-    return str(Path(settings.image_dir) / "base" / images[idx])
+    """Select the current image file for a camera."""
+    filename = _image_overrides.get(camera_id) or CAMERA_IMAGES.get(camera_id, "placeholder.png")
+    return str(Path(settings.image_dir) / "base" / filename)
 
 
 def _load_cameras_from_db() -> dict[str, CameraState]:
@@ -191,6 +192,29 @@ async def list_cameras() -> list[dict[str, Any]]:
         }
         for s in camera_states.values()
     ]
+
+
+@app.post("/cameras/reset")
+async def reset_cameras() -> dict[str, Any]:
+    """Reset all cameras to baseline mode."""
+    _image_overrides.clear()
+    for state in camera_states.values():
+        state.mode = "baseline"
+        state.current_interval = state.baseline_interval
+        state.last_published = time.time()
+        state.frame_sequence = 0
+    return {"status": "reset", "cameras": len(camera_states)}
+
+
+@app.post("/cameras/{camera_id}/set-image")
+async def set_camera_image(camera_id: str, request: Request) -> dict[str, Any]:
+    """Override the image file for a camera."""
+    body = await request.json()
+    filename = body.get("filename", "")
+    if not filename:
+        raise HTTPException(status_code=400, detail="filename required")
+    _image_overrides[camera_id] = filename
+    return {"camera_id": camera_id, "filename": filename}
 
 
 @app.post("/cameras/{camera_id}/publish")

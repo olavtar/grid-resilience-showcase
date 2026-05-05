@@ -31,7 +31,7 @@ async def proxy_post(
 ) -> Any:
     """Forward a POST request to a backend service."""
     try:
-        resp = await client.post(url, json=body, timeout=10.0)
+        resp = await client.post(url, json=body, timeout=60.0)
         resp.raise_for_status()
         return resp.json()
     except httpx.RequestError as e:

@@ -9,24 +9,11 @@ import threading
 from typing import Any
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFilter
 
 _latest_overlay: bytes | None = None
 _overlay_bounds: tuple[float, float, float, float] | None = None
 _lock = threading.Lock()
-
-PRECIP_COLORS = np.array(
-    [
-        [0, 0, 0, 0],  # no precip — transparent
-        [100, 149, 237, 80],  # light rain — cornflower blue
-        [65, 105, 225, 100],  # moderate rain — royal blue
-        [0, 0, 205, 120],  # heavy rain — medium blue
-        [138, 43, 226, 130],  # freezing rain — blue violet
-        [148, 0, 211, 150],  # heavy freezing rain — dark violet
-        [199, 21, 133, 160],  # ice pellets — medium violet red
-    ],
-    dtype=np.uint8,
-)
 
 
 def _interpolate_grid(
@@ -49,62 +36,47 @@ def _interpolate_grid(
         from scipy.interpolate import griddata
 
         points = np.array(list(zip(lons, lats, strict=False)))
-        grid = griddata(points, np.array(values), (gx, gy), method="cubic", fill_value=0.0)
+        grid = griddata(points, np.array(values), (gx, gy), method="linear", fill_value=0.0)
         grid = np.clip(grid, 0, None)
         return np.flipud(grid)
     except ImportError:
-        result = np.zeros((resolution, resolution))
-        for i, (lat, lon, val) in enumerate(zip(lats, lons, values, strict=False)):
-            r = int((lat - lat_min) / (lat_max - lat_min) * (resolution - 1))
-            c = int((lon - lon_min) / (lon_max - lon_min) * (resolution - 1))
-            r = min(max(r, 0), resolution - 1)
-            c = min(max(c, 0), resolution - 1)
-            spread = max(resolution // 8, 3)
-            for dr in range(-spread, spread + 1):
-                for dc in range(-spread, spread + 1):
-                    rr, cc = r + dr, c + dc
-                    if 0 <= rr < resolution and 0 <= cc < resolution:
-                        dist = (dr * dr + dc * dc) ** 0.5
-                        weight = max(0, 1.0 - dist / spread)
-                        result[resolution - 1 - rr, cc] = max(
-                            result[resolution - 1 - rr, cc], val * weight
-                        )
-        return result
+        return np.zeros((resolution, resolution))
 
 
 def _render_overlay(
-    precip_grid: np.ndarray,
+    presence_grid: np.ndarray,
     freezing_grid: np.ndarray,
-    wind_grid: np.ndarray,
+    intensity_grid: np.ndarray,
 ) -> bytes:
-    """Render precipitation data as a transparent RGBA PNG."""
-    h, w = precip_grid.shape
+    """Render weather coverage as a transparent RGBA PNG."""
+    h, w = presence_grid.shape
     rgba = np.zeros((h, w, 4), dtype=np.uint8)
-
-    max_precip = max(precip_grid.max(), 1.0)
-    norm_precip = precip_grid / max_precip
 
     for r in range(h):
         for c in range(w):
-            p = norm_precip[r, c]
-            fz = freezing_grid[r, c]
-            wind = wind_grid[r, c]
-
-            if p < 0.05:
+            p = presence_grid[r, c]
+            if p < 0.15:
                 continue
 
-            if fz > 0.5:
-                idx = min(int(3 + p * 3), 6)
-            else:
-                idx = min(int(p * 3), 3)
+            fz = freezing_grid[r, c]
+            intensity = min(intensity_grid[r, c], 1.0)
+            alpha = int(min(p, 1.0) * 220)
 
-            color = PRECIP_COLORS[idx].copy()
-            wind_boost = min(wind / 25.0, 1.0) * 30
-            color[3] = min(int(color[3] + wind_boost), 200)
-            rgba[r, c] = color
+            if fz > 0.3:
+                base_r, base_g, base_b = 120, 40, 200
+                boost_r, boost_g, boost_b = 60, -20, 40
+            else:
+                base_r, base_g, base_b = 40, 60, 220
+                boost_r, boost_g, boost_b = -20, -30, 35
+
+            rgba[r, c, 0] = min(255, int(base_r + boost_r * intensity))
+            rgba[r, c, 1] = min(255, max(0, int(base_g + boost_g * intensity)))
+            rgba[r, c, 2] = min(255, int(base_b + boost_b * intensity))
+            rgba[r, c, 3] = alpha
 
     img = Image.fromarray(rgba, "RGBA")
     img = img.resize((512, 512), Image.Resampling.LANCZOS)
+    img = img.filter(ImageFilter.GaussianBlur(radius=6))
     buf = io.BytesIO()
     img.save(buf, format="PNG", optimize=True)
     return buf.getvalue()
@@ -120,9 +92,23 @@ def update_overlay(forecast_data: dict[str, Any]) -> None:
 
     lats = [c["lat"] for c in grid_cells]
     lons = [c["lon"] for c in grid_cells]
-    precip = [c.get("tp_mm", 0.0) for c in grid_cells]
-    freezing = [1.0 if c.get("cfrzr", False) else 0.0 for c in grid_cells]
-    wind = [(c.get("u10m_mps", 0.0) ** 2 + c.get("v10m_mps", 0.0) ** 2) ** 0.5 for c in grid_cells]
+
+    presence = []
+    freezing = []
+    intensity = []
+    for c in grid_cells:
+        has_wx = any(
+            [
+                c.get("cfrzr", False),
+                c.get("cicep", False),
+                c.get("csnow", False),
+                c.get("crain", False),
+            ]
+        )
+        tp = c.get("tp_mm", 0.0)
+        presence.append(1.0 if has_wx or tp > 0.01 else 0.0)
+        freezing.append(1.0 if c.get("cfrzr", False) or c.get("cicep", False) else 0.0)
+        intensity.append(min(tp / 2.0, 1.0))
 
     padding = 0.02
     bounds = (
@@ -133,11 +119,11 @@ def update_overlay(forecast_data: dict[str, Any]) -> None:
     )
 
     res = 128
-    precip_grid = _interpolate_grid(lats, lons, precip, bounds, res)
+    presence_grid = _interpolate_grid(lats, lons, presence, bounds, res)
     freezing_grid = _interpolate_grid(lats, lons, freezing, bounds, res)
-    wind_grid = _interpolate_grid(lats, lons, wind, bounds, res)
+    intensity_grid = _interpolate_grid(lats, lons, intensity, bounds, res)
 
-    png_bytes = _render_overlay(precip_grid, freezing_grid, wind_grid)
+    png_bytes = _render_overlay(presence_grid, freezing_grid, intensity_grid)
 
     with _lock:
         _latest_overlay = png_bytes

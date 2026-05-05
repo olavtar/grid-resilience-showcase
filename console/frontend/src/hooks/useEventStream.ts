@@ -39,6 +39,7 @@ export function useEventStream(): GridState {
 
     es.addEventListener("grid.ops.events", (e) => {
       const data = JSON.parse(e.data) as OpsEvent;
+      if (data.title?.toLowerCase().includes("reset")) return;
       setEvents((prev) => [data, ...prev].slice(0, 200));
     });
 
@@ -60,6 +61,19 @@ export function useEventStream(): GridState {
     es.addEventListener("grid.faults.detected", (e) => {
       const data = JSON.parse(e.data) as FaultEvent;
       setFaults((prev) => [data, ...prev]);
+    });
+
+    es.addEventListener("grid.faults.restoration", (e) => {
+      const data = JSON.parse(e.data);
+      const restoredIds = new Set(data.restored_asset_ids ?? []);
+      if (restoredIds.size > 0) {
+        setFaults((prev) => prev.map((f) => ({
+          ...f,
+          affected_asset_ids: f.affected_asset_ids.filter((id: string) => !restoredIds.has(id)),
+        })));
+      } else {
+        setFaults([]);
+      }
     });
 
     es.addEventListener("grid.customer.impact", (e) => {

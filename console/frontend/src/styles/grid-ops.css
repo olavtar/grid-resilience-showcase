@@ -122,19 +122,27 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   gap: 16px;
   padding: 8px 24px;
-  background: #FFF3CD;
-  border-left: 4px solid var(--grid--color--risk-medium);
+  background: #F8D7DA;
+  border-left: 4px solid var(--grid--color--risk-critical);
   font-size: 13px;
   font-weight: 500;
+  color: #721C24;
 }
 
 .grid-impact-banner--active {
   display: flex;
 }
 
+.grid-impact-banner--partial {
+  background: #FFF3CD;
+  border-left-color: var(--grid--color--risk-medium);
+  color: #856404;
+}
+
 .grid-impact-banner--restored {
   background: #D4EDDA;
   border-left-color: var(--grid--color--risk-low);
+  color: #155724;
 }
 
 /* Cards */

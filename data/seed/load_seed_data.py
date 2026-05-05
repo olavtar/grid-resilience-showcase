@@ -151,7 +151,13 @@ def _insert_crews(cur: psycopg.Cursor) -> int:
                shift_start, shift_end, home_base_lat, home_base_lon,
                current_lat, current_lon, status)
                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-               ON CONFLICT (id) DO NOTHING""",
+               ON CONFLICT (id) DO UPDATE SET
+               skills = EXCLUDED.skills,
+               certifications = EXCLUDED.certifications,
+               home_base_lat = EXCLUDED.home_base_lat,
+               home_base_lon = EXCLUDED.home_base_lon,
+               current_lat = EXCLUDED.current_lat,
+               current_lon = EXCLUDED.current_lon""",
             (
                 r["id"],
                 r["name"],

@@ -247,6 +247,7 @@ class DispatchAssignment(GridEvent):
     )
     guardrails_message: str | None = None
     dispatcher_justification: str | None = None
+    work_order_title: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -262,6 +263,7 @@ class FaultEvent(GridEvent):
     segment_id: str
     fault_type: FaultType
     affected_customers: int = 0
+    affected_asset_ids: list[str] = Field(default_factory=list)
     lat: float
     lon: float
 
@@ -275,6 +277,7 @@ class RestorationEvent(GridEvent):
     customers_restored: int = 0
     remaining_affected: int = 0
     etr_minutes: int | None = None
+    restored_asset_ids: list[str] = Field(default_factory=list)
     adms_capacity_check: str | None = Field(
         default=None, description="Capacity verification summary"
     )

@@ -9,6 +9,7 @@ interface SubstationPanelProps {
 
 export function SubstationPanel({ signalingServer }: SubstationPanelProps) {
   const [status, setStatus] = useState<string>("connecting");
+  const [expanded, setExpanded] = useState(false);
   const firstFrameRef = useRef(false);
 
   useEffect(() => {
@@ -53,9 +54,37 @@ export function SubstationPanel({ signalingServer }: SubstationPanelProps) {
     };
   }, [signalingServer]);
 
+  useEffect(() => {
+    if (!expanded) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setExpanded(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [expanded]);
+
+  const cardStyle: React.CSSProperties = expanded
+    ? { position: "fixed", inset: 0, top: 56, zIndex: 900, display: "flex", flexDirection: "column", background: "#151515" }
+    : { height: 300, display: "flex", flexDirection: "column" };
+
   return (
-    <div className="grid-card" style={{ height: 300, display: "flex", flexDirection: "column" }}>
-      <div className="grid-card__header">3D Substation Digital Twin</div>
+    <div className="grid-card" style={cardStyle}>
+      <div className="grid-card__header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span>Substation Twin</span>
+        <button
+          onClick={() => setExpanded(!expanded)}
+          title={expanded ? "Collapse" : "Expand"}
+          style={{
+            background: "none",
+            border: "none",
+            color: "#6a6e73",
+            cursor: "pointer",
+            fontSize: 14,
+            padding: "0 4px",
+            lineHeight: 1,
+          }}
+        >
+          {expanded ? "⊟" : "⊞"}
+        </button>
+      </div>
       <div className="grid-card__body--flush" style={{ flex: 1, position: "relative", background: "#1e1e1e" }}>
         <video
           id="kit-stream-video"

@@ -176,10 +176,11 @@ export function GridMap({ assets, segments, cameras, riskScores, faults, dispatc
       );
     }
 
+    const faultedAssets = new Set(faults.flatMap((f) => f.affected_asset_ids ?? []));
     const assetFeatures: Feature<Point>[] = assets.map((a) => ({
       type: "Feature" as const,
       geometry: { type: "Point" as const, coordinates: [a.lon, a.lat] },
-      properties: { id: a.id, color: riskColor(riskScores.get(a.id)?.composite_score ?? 0) },
+      properties: { id: a.id, color: faultedAssets.has(a.id) ? "#A30000" : riskColor(riskScores.get(a.id)?.composite_score ?? 0) },
     }));
     (map.getSource(SOURCE_IDS.assets) as maplibregl.GeoJSONSource)?.setData(fc(assetFeatures));
 

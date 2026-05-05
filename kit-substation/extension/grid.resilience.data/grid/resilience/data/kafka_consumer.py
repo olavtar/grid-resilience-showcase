@@ -11,6 +11,7 @@ from confluent_kafka import Consumer, KafkaError
 
 TOPICS = [
     "grid.assets.risk-scores",
+    "grid.ops.events",
     "grid.faults.detected",
     "grid.faults.restoration",
 ]

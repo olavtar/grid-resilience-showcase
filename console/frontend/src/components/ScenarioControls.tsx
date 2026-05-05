@@ -6,19 +6,20 @@ const API_BASE = import.meta.env.VITE_API_BASE ?? "";
 
 interface ScenarioControlsProps {
   onReset?: () => void;
+  onBeatChange?: (beat: string) => void;
 }
 
 const BEATS = [
   { id: "forecast", label: "Forecast" },
   { id: "triage", label: "Triage" },
   { id: "escalate", label: "Escalate" },
-  { id: "detect", label: "Detect" },
   { id: "dispatch", label: "Dispatch" },
   { id: "storm", label: "Storm" },
-  { id: "trace", label: "Trace" },
+  { id: "restore", label: "Restore" },
+  { id: "trace", label: "Summary" },
 ];
 
-export function ScenarioControls({ onReset }: ScenarioControlsProps) {
+export function ScenarioControls({ onReset, onBeatChange }: ScenarioControlsProps) {
   const [beat, setBeat] = useState("idle");
 
   const post = useCallback(async (action: string) => {
@@ -26,7 +27,9 @@ export function ScenarioControls({ onReset }: ScenarioControlsProps) {
       const resp = await fetch(`${API_BASE}/api/scenario/${action}`, { method: "POST" });
       if (resp.ok) {
         const data = await resp.json();
-        setBeat(data.beat ?? data.current_beat ?? "idle");
+        const newBeat = data.beat ?? data.current_beat ?? "idle";
+        setBeat(newBeat);
+        onBeatChange?.(newBeat);
         if (action === "reset") onReset?.();
       }
     } catch {
@@ -43,12 +46,6 @@ export function ScenarioControls({ onReset }: ScenarioControlsProps) {
       </button>
       <button className="grid-controls__button" onClick={() => post("advance")}>
         Advance
-      </button>
-      <button className="grid-controls__button" onClick={() => post("trigger-storm")}>
-        Storm
-      </button>
-      <button className="grid-controls__button" onClick={() => post("trigger-fault")}>
-        Fault
       </button>
       <button className="grid-controls__button" onClick={() => post("reset")}>
         Reset
