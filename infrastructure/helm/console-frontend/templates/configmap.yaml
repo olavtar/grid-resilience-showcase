@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: console-frontend-config
+  labels:
+    {{- include "console-frontend.labels" . | nindent 4 }}
+data:
+  config.json: |
+    {
+      "kitSignalingServer": {{ .Values.kitSignalingServer | quote }},
+      "turn": {
+        "urls": {{ .Values.turn.urls | quote }},
+        "username": {{ .Values.turn.username | quote }},
+        "credential": {{ .Values.turn.credential | quote }}
+      }
+    }

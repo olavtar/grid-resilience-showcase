@@ -12,13 +12,16 @@
       // Patch RTCPeerConnection with TURN relay BEFORE ES modules load —
       // the NVIDIA streaming library captures a reference at import time.
       (function() {
-        var turnServer = {
-          urls: "turns:turn-grid-ops-ai.apps.v6f8n9h1d3j6g2g.51ty.p1.openshiftapps.com:443?transport=tcp",
-          username: "streaming",
-          credential: "JoBGIMNIGZxGYCgq8+zoKQ=="
-        };
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '/config.json', false);
+        xhr.send();
+        if (xhr.status !== 200) { console.warn('[TURN patch] config.json not found, skipping'); return; }
+        var cfg = JSON.parse(xhr.responseText);
+        if (!cfg.turn || !cfg.turn.urls) { console.warn('[TURN patch] no turn config'); return; }
 
         var NativeRTC = window.RTCPeerConnection;
+        var turnServer = { urls: cfg.turn.urls, username: cfg.turn.username, credential: cfg.turn.credential };
+
         var Patched = function(config) {
           var p = Object.assign({}, config || {});
           p.iceServers = (p.iceServers || []).concat(turnServer);
@@ -35,6 +38,7 @@
         } catch(e) {
           window.RTCPeerConnection = Patched;
         }
+        console.log('[TURN patch] applied');
       })();
     </script>
     <script type="module" src="/src/main.tsx"></script>

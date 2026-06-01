@@ -63,9 +63,20 @@ curl -X POST http://localhost:8180/forecast/run
 
 This runs a live CorrDiff inference (~45s) and caches the result. Subsequent scenario starts use the cache for instant replay.
 
-### Access the console
+### Deploy the console
 
-The console is exposed via an OpenShift Route:
+The console frontend requires cluster-specific values for Kit streaming and TURN relay:
+
+```bash
+CLUSTER_APPS=$(oc get ingresses.config cluster -o jsonpath='{.spec.domain}')
+
+helm install console-frontend infrastructure/helm/console-frontend/ -n grid-ops-console \
+  --set kitSignalingServer=kit-substation-grid-ops-ai.${CLUSTER_APPS} \
+  --set turn.urls="turns:turn-grid-ops-ai.${CLUSTER_APPS}:443?transport=tcp" \
+  --set turn.credential=<coturn-password>
+```
+
+### Access the console
 
 ```bash
 oc get route console-frontend -n grid-ops-console -o jsonpath='{.spec.host}'

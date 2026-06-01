@@ -23,12 +23,13 @@ interface OperationsViewProps {
   onDismissOverlay: () => void;
 }
 
-const KIT_SIGNALING_URL = "kit-substation-grid-ops-ai.apps.v6f8n9h1d3j6g2g.51ty.p1.openshiftapps.com";
+const KIT_SIGNALING_URL_DEFAULT = "kit-substation-grid-ops-ai.apps.g4h4d3j7q1c9f7m.cimo.p1.openshiftapps.com";
 
 const EMPTY_TOPOLOGY: TopologyData = { feeders: [], assets: [], segments: [], cameras: [] };
 
 export function OperationsView({ stream, beat, overlayDismissed, onDismissOverlay }: OperationsViewProps) {
   const [topology, setTopology] = useState<TopologyData>(EMPTY_TOPOLOGY);
+  const [kitUrl, setKitUrl] = useState(KIT_SIGNALING_URL_DEFAULT);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,6 +41,15 @@ export function OperationsView({ stream, beat, overlayDismissed, onDismissOverla
         }
       } catch {
         /* topology fetch failed — map renders empty */
+      }
+      try {
+        const cfg = await fetch("/config.json");
+        if (cfg.ok && !cancelled) {
+          const data = await cfg.json();
+          if (data.kitSignalingServer) setKitUrl(data.kitSignalingServer);
+        }
+      } catch {
+        /* config not available — use default */
       }
     })();
     return () => { cancelled = true; };
@@ -92,7 +102,7 @@ export function OperationsView({ stream, beat, overlayDismissed, onDismissOverla
         />
       </div>
       <div className="grid-layout__right">
-        <SubstationPanel signalingServer={KIT_SIGNALING_URL} />
+        <SubstationPanel signalingServer={kitUrl} />
         <RiskTable riskScores={stream.riskScores} />
         <FindingsPanel findings={stream.findings} />
         <EventStream events={stream.events} />

@@ -26,4 +26,10 @@ route:
   enabled: true
   timeout: 300s
 
+kitSignalingServer: ""
+turn:
+  urls: ""
+  username: streaming
+  credential: ""
+
 env: {}
